@@ -64,12 +64,14 @@ model SubprojectAccess {
 }
 
 model Subproject {
-  id        String             @id @default(uuid())
-  project   Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  projectId String
-  name      String
-  boards    Board[]
-  access    SubprojectAccess[]
+  id                     String                 @id @default(uuid())
+  project                Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId              String
+  name                   String
+  boards                 Board[]
+  access                 SubprojectAccess[]
+  InvitationSubprojects  InvitationSubproject[]
+  InvitationSubprojectId String
 
   @@index([projectId])
 }
@@ -102,7 +104,7 @@ model Task {
   title       String
   description String?
   position    String
-  tags        Tag[]        // implicit many-to-many, Prisma сама создаст join-таблицу
+  tags        Tag[] // implicit many-to-many, Prisma сама создаст join-таблицу
   attachments Attachment[]
 
   @@index([columnId])
@@ -129,14 +131,23 @@ model Attachment {
 }
 
 model Invitation {
-  id            String   @id @default(uuid())
-  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  projectId     String
-  email         String
-  token         String   @unique
-  status        InviteStatus @default(PENDING)
-  subprojectIds Json     // массив id подпроектов, к которым даётся доступ
-  createdAt     DateTime @default(now())
-  expiresAt     DateTime
+  id             String                 @id @default(uuid())
+  project        Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId      String
+  email          String
+  token          String                 @unique
+  status         InviteStatus           @default(PENDING)
+  allSubprojects Boolean                @default(false)
+  subprojects    InvitationSubproject[]
+  createdAt      DateTime               @default(now())
+  expiresAt      DateTime
 }
 
+model InvitationSubproject {
+  invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  invitationId String
+  subproject   Subproject @relation(fields: [subprojectId], references: [id], onDelete: Cascade)
+  subprojectId String
+
+  @@id([invitationId, subprojectId])
+}
