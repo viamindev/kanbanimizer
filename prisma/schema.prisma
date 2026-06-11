@@ -10,5 +10,133 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url = "file:./dev.db
 }
+
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+}
+
+model User {
+  id          String       @id @default(uuid())
+  email       String       @unique
+  name        String
+  memberships Membership[]
+}
+
+model Project {
+  id          String       @id @default(uuid())
+  name        String
+  ownerId     String
+  subprojects Subproject[]
+  memberships Membership[]
+  invitations Invitation[]
+  tags        Tag[]
+}
+
+model Membership {
+  id               String             @id @default(uuid())
+  project          Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId        String
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId           String
+  role             Role               @default(MEMBER)
+  allSubprojects   Boolean            @default(false)
+  subProjectAccess SubprojectAccess[]
+
+  @@unique([projectId, userId])
+}
+
+model SubprojectAccess {
+  membership   Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  membershipId String
+  subproject   Subproject @relation(fields: [subprojectId], references: [id], onDelete: Cascade)
+  subprojectId String
+
+  @@id([membershipId, subprojectId])
+}
+
+model Subproject {
+  id        String             @id @default(uuid())
+  project   Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+  name      String
+  boards    Board[]
+  access    SubprojectAccess[]
+
+  @@index([projectId])
+}
+
+model Board {
+  id           String     @id @default(uuid())
+  subproject   Subproject @relation(fields: [subprojectId], references: [id], onDelete: Cascade)
+  subprojectId String
+  name         String
+  columns      Column[]
+
+  @@index([subprojectId])
+}
+
+model Column {
+  id       String @id @default(uuid())
+  board    Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  boardId  String
+  name     String
+  position String
+  tasks    Task[]
+
+  @@index([boardId])
+}
+
+model Task {
+  id          String       @id @default(uuid())
+  column      Column       @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  columnId    String
+  title       String
+  description String?
+  position    String
+  tags        Tag[]        // implicit many-to-many, Prisma сама создаст join-таблицу
+  attachments Attachment[]
+
+  @@index([columnId])
+}
+
+model Tag {
+  id        String  @id @default(uuid())
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+  name      String
+  color     String
+  tasks     Task[]
+
+  @@index([projectId])
+}
+
+model Attachment {
+  id       String @id @default(uuid())
+  task     Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId   String
+  fileUrl  String
+  mimeType String
+  fileName String
+}
+
+model Invitation {
+  id            String   @id @default(uuid())
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId     String
+  email         String
+  token         String   @unique
+  status        InviteStatus @default(PENDING)
+  subprojectIds Json     // массив id подпроектов, к которым даётся доступ
+  createdAt     DateTime @default(now())
+  expiresAt     DateTime
+}
+
