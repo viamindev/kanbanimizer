@@ -3,7 +3,6 @@ import { notFound, redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { requireBoardAccess } from "@/lib/access";
 import { getBoardData } from "@/app/board-actions";
-import { prisma } from "@/lib/prisma";
 import { BoardView } from "@/components/board/board-view";
 import { LogoutButton } from "@/components/logout-button";
 
@@ -25,15 +24,8 @@ export default async function BoardPage({
     notFound();
   }
 
-  const [board, membership] = await Promise.all([
-    getBoardData(boardId),
-    prisma.membership.findUnique({
-      where: { projectId_userId: { projectId, userId: user.id } },
-    }),
-  ]);
-
-  const canInvite =
-    membership?.role === "OWNER" || membership?.role === "ADMIN";
+  const board = await getBoardData(boardId);
+  const canInvite = board.role === "OWNER" || board.role === "ADMIN";
 
   return (
     <main className="flex h-screen flex-col">
@@ -51,6 +43,8 @@ export default async function BoardPage({
         boardId={boardId}
         projectId={projectId}
         canInvite={canInvite}
+        currentUserId={board.currentUserId}
+        role={board.role}
         initialColumns={board.columns}
       />
     </main>

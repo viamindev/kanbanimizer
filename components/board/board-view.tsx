@@ -24,14 +24,21 @@ export function BoardView({
   boardId,
   projectId,
   canInvite,
+  currentUserId,
+  role,
   initialColumns,
 }: {
   boardId: string;
   projectId: string;
   canInvite: boolean;
+  currentUserId: string;
+  role: "OWNER" | "ADMIN" | "MEMBER";
   initialColumns: ColumnT[];
 }) {
   const router = useRouter();
+  // OWNER/ADMIN may modify any entity; a MEMBER only their own.
+  const canWrite = (creatorId: string | null) =>
+    role === "OWNER" || role === "ADMIN" || creatorId === currentUserId;
   const [columns, setColumns] = useState<ColumnT[]>(initialColumns);
   const [connected, setConnected] = useState(false);
   const [activeTask, setActiveTask] = useState<TaskT | null>(null);
@@ -185,6 +192,8 @@ export function BoardView({
           <ColumnView
             key={col.id}
             column={col}
+            canEditColumn={canWrite(col.createdById)}
+            canEditTask={canWrite}
             onAddTask={(title) => addTask(col.id, title)}
             onOpenTask={setActiveTask}
             onDrop={(beforeTaskId) => handleDrop(col.id, beforeTaskId)}
@@ -208,6 +217,7 @@ export function BoardView({
             columns.flatMap((c) => c.tasks).find((t) => t.id === activeTask.id) ??
             activeTask
           }
+          readOnly={!canWrite(activeTask.createdById)}
           onClose={() => setActiveTask(null)}
           onSave={(patch) => saveTask(activeTask.id, patch)}
           onDelete={() => removeTask(activeTask.id)}
@@ -221,6 +231,8 @@ export function BoardView({
 
 function ColumnView({
   column,
+  canEditColumn,
+  canEditTask,
   onAddTask,
   onOpenTask,
   onDrop,
@@ -230,6 +242,8 @@ function ColumnView({
   onDelete,
 }: {
   column: ColumnT;
+  canEditColumn: boolean;
+  canEditTask: (creatorId: string | null) => boolean;
   onAddTask: (title: string) => void;
   onOpenTask: (task: TaskT) => void;
   onDrop: (beforeTaskId: string | null) => void;
@@ -270,7 +284,7 @@ function ColumnView({
       }}
     >
       <div
-        draggable={!editingName}
+        draggable={canEditColumn && !editingName}
         onDragStart={(e) => {
           onColumnDragStart(column.id);
           e.stopPropagation();
@@ -281,7 +295,9 @@ function ColumnView({
           e.stopPropagation();
           onDrop(null); // dropping on the header reorders columns
         }}
-        className="flex cursor-grab items-center justify-between gap-2 border-b-2 border-border px-3 py-2 active:cursor-grabbing"
+        className={`flex items-center justify-between gap-2 border-b-2 border-border px-3 py-2 ${
+          canEditColumn ? "cursor-grab active:cursor-grabbing" : ""
+        }`}
       >
         {editingName ? (
           <Input
@@ -301,43 +317,50 @@ function ColumnView({
         ) : (
           <span
             className="flex-1 truncate font-heading"
-            onDoubleClick={() => setEditingName(true)}
-            title="Двойной клик — переименовать"
+            onDoubleClick={() => canEditColumn && setEditingName(true)}
+            title={canEditColumn ? "Двойной клик — переименовать" : undefined}
           >
             {column.name}
           </span>
         )}
         <span className="text-xs text-foreground/50">{tasks.length}</span>
-        <button
-          onClick={onDelete}
-          title="Удалить колонку"
-          className="rounded-base px-1 text-foreground/50 hover:bg-chart-2/30 hover:text-foreground"
-        >
-          ×
-        </button>
+        {canEditColumn && (
+          <button
+            onClick={onDelete}
+            title="Удалить колонку"
+            className="rounded-base px-1 text-foreground/50 hover:bg-chart-2/30 hover:text-foreground"
+          >
+            ×
+          </button>
+        )}
       </div>
 
       <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-2">
-        {tasks.map((task) => (
-          <div
-            key={task.id}
-            draggable
-            onDragStart={(e) => {
-              onTaskDragStart(task.id);
-              e.stopPropagation();
-            }}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onDrop(task.id); // insert before this task
-            }}
-            onClick={() => onOpenTask(task)}
-            className="cursor-grab rounded-base border-2 border-border bg-background p-2 text-sm shadow-shadow active:cursor-grabbing"
-          >
-            {task.title}
-          </div>
-        ))}
+        {tasks.map((task) => {
+          const editable = canEditTask(task.createdById);
+          return (
+            <div
+              key={task.id}
+              draggable={editable}
+              onDragStart={(e) => {
+                onTaskDragStart(task.id);
+                e.stopPropagation();
+              }}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onDrop(task.id); // insert before this task
+              }}
+              onClick={() => onOpenTask(task)}
+              className={`rounded-base border-2 border-border bg-background p-2 text-sm shadow-shadow ${
+                editable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
+              }`}
+            >
+              {task.title}
+            </div>
+          );
+        })}
       </div>
 
       <div className="border-t-2 border-border p-2">

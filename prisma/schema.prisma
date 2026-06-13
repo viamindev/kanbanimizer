@@ -103,12 +103,13 @@ model Board {
 }
 
 model Column {
-  id       String @id @default(uuid())
-  board    Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
-  boardId  String
-  name     String
-  position String
-  tasks    Task[]
+  id          String  @id @default(uuid())
+  board       Board   @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  boardId     String
+  name        String
+  position    String
+  createdById String?
+  tasks       Task[]
 
   @@index([boardId])
 }
@@ -120,6 +121,7 @@ model Task {
   title       String
   description String?
   position    String
+  createdById String?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   tags        Tag[] // implicit many-to-many, Prisma сама создаст join-таблицу

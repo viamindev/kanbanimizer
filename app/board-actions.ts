@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import {
+  canWrite,
   requireBoardAccess,
   requireColumnAccess,
   requireTaskAccess,
@@ -17,6 +18,7 @@ function serializeTask(t: {
   title: string;
   description: string | null;
   position: string;
+  createdById: string | null;
 }): SerializedTask {
   return {
     id: t.id,
@@ -24,6 +26,7 @@ function serializeTask(t: {
     title: t.title,
     description: t.description,
     position: t.position,
+    createdById: t.createdById,
   };
 }
 
@@ -32,15 +35,22 @@ function serializeColumn(c: {
   boardId: string;
   name: string;
   position: string;
+  createdById: string | null;
 }): SerializedColumn {
-  return { id: c.id, boardId: c.boardId, name: c.name, position: c.position };
+  return {
+    id: c.id,
+    boardId: c.boardId,
+    name: c.name,
+    position: c.position,
+    createdById: c.createdById,
+  };
 }
 
 /* ----------------------------- board query ----------------------------- */
 
 export async function getBoardData(boardId: string) {
   const user = await requireUser();
-  const { board } = await requireBoardAccess(boardId, user.id);
+  const { board, membership } = await requireBoardAccess(boardId, user.id);
   const columns = await prisma.column.findMany({
     where: { boardId },
     orderBy: { position: "asc" },
@@ -49,6 +59,8 @@ export async function getBoardData(boardId: string) {
   return {
     id: board.id,
     name: board.name,
+    currentUserId: user.id,
+    role: membership.role as "OWNER" | "ADMIN" | "MEMBER",
     columns: columns.map((c) => ({
       ...serializeColumn(c),
       tasks: c.tasks.map(serializeTask),
@@ -79,7 +91,12 @@ export async function createTaskAction(input: {
   const position = positionBetween(last?.position ?? null, null);
 
   const task = await prisma.task.create({
-    data: { columnId: data.columnId, title: data.title, position },
+    data: {
+      columnId: data.columnId,
+      title: data.title,
+      position,
+      createdById: user.id,
+    },
   });
   const serialized = serializeTask(task);
   publish(boardId, { type: "task.created", task: serialized });
@@ -99,7 +116,13 @@ export async function updateTaskAction(input: {
 }): Promise<SerializedTask> {
   const user = await requireUser();
   const data = updateTaskSchema.parse(input);
-  const { boardId } = await requireTaskAccess(data.taskId, user.id);
+  const { boardId, task: existing, membership } = await requireTaskAccess(
+    data.taskId,
+    user.id,
+  );
+  if (!canWrite(membership.role, existing.createdById, user.id)) {
+    throw new Error("FORBIDDEN");
+  }
 
   const task = await prisma.task.update({
     where: { id: data.taskId },
@@ -126,7 +149,13 @@ export async function moveTaskAction(input: {
 }): Promise<void> {
   const user = await requireUser();
   const data = moveTaskSchema.parse(input);
-  const { boardId } = await requireTaskAccess(data.taskId, user.id);
+  const { boardId, task: existing, membership } = await requireTaskAccess(
+    data.taskId,
+    user.id,
+  );
+  if (!canWrite(membership.role, existing.createdById, user.id)) {
+    throw new Error("FORBIDDEN");
+  }
   // target column must live on the same board
   const { boardId: targetBoard } = await requireColumnAccess(
     data.columnId,
@@ -148,7 +177,10 @@ export async function moveTaskAction(input: {
 
 export async function deleteTaskAction(taskId: string): Promise<void> {
   const user = await requireUser();
-  const { boardId } = await requireTaskAccess(taskId, user.id);
+  const { boardId, task, membership } = await requireTaskAccess(taskId, user.id);
+  if (!canWrite(membership.role, task.createdById, user.id)) {
+    throw new Error("FORBIDDEN");
+  }
   await prisma.task.delete({ where: { id: taskId } });
   publish(boardId, { type: "task.deleted", taskId });
 }
@@ -176,7 +208,12 @@ export async function createColumnAction(input: {
   const position = positionBetween(last?.position ?? null, null);
 
   const column = await prisma.column.create({
-    data: { boardId: data.boardId, name: data.name, position },
+    data: {
+      boardId: data.boardId,
+      name: data.name,
+      position,
+      createdById: user.id,
+    },
   });
   const serialized = serializeColumn(column);
   publish(data.boardId, { type: "column.created", column: serialized });
@@ -194,7 +231,13 @@ export async function renameColumnAction(input: {
 }): Promise<SerializedColumn> {
   const user = await requireUser();
   const data = renameColumnSchema.parse(input);
-  const { boardId } = await requireColumnAccess(data.columnId, user.id);
+  const { boardId, column: existing, membership } = await requireColumnAccess(
+    data.columnId,
+    user.id,
+  );
+  if (!canWrite(membership.role, existing.createdById, user.id)) {
+    throw new Error("FORBIDDEN");
+  }
   const column = await prisma.column.update({
     where: { id: data.columnId },
     data: { name: data.name },
@@ -215,7 +258,13 @@ export async function moveColumnAction(input: {
 }): Promise<void> {
   const user = await requireUser();
   const data = moveColumnSchema.parse(input);
-  const { boardId } = await requireColumnAccess(data.columnId, user.id);
+  const { boardId, column: existing, membership } = await requireColumnAccess(
+    data.columnId,
+    user.id,
+  );
+  if (!canWrite(membership.role, existing.createdById, user.id)) {
+    throw new Error("FORBIDDEN");
+  }
   await prisma.column.update({
     where: { id: data.columnId },
     data: { position: data.position },
@@ -229,7 +278,13 @@ export async function moveColumnAction(input: {
 
 export async function deleteColumnAction(columnId: string): Promise<void> {
   const user = await requireUser();
-  const { boardId } = await requireColumnAccess(columnId, user.id);
+  const { boardId, column, membership } = await requireColumnAccess(
+    columnId,
+    user.id,
+  );
+  if (!canWrite(membership.role, column.createdById, user.id)) {
+    throw new Error("FORBIDDEN");
+  }
   await prisma.column.delete({ where: { id: columnId } });
   publish(boardId, { type: "column.deleted", columnId });
 }

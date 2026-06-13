@@ -6,6 +6,7 @@ export type TaskT = {
   title: string;
   description: string | null;
   position: string;
+  createdById: string | null;
 };
 
 export type ColumnT = {
@@ -13,6 +14,7 @@ export type ColumnT = {
   boardId: string;
   name: string;
   position: string;
+  createdById: string | null;
   tasks: TaskT[];
 };
 

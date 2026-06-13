@@ -34,6 +34,7 @@ export type SerializedTask = {
   title: string;
   description: string | null;
   position: string;
+  createdById: string | null;
 };
 
 export type SerializedColumn = {
@@ -41,6 +42,7 @@ export type SerializedColumn = {
   boardId: string;
   name: string;
   position: string;
+  createdById: string | null;
 };
 
 function channel(boardId: string) {
