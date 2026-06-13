@@ -1,11 +1,7 @@
-import { Button } from "@/components/ui/button";
+import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth";
 
-export default function Home() {
-  return (
-    <div>
-      <Button>
-        Тестовая кнопка
-      </Button>
-    </div>
-  );
+export default async function Home() {
+  const user = await getCurrentUser();
+  redirect(user ? "/projects" : "/login");
 }
