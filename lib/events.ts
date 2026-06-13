@@ -25,6 +25,7 @@ export type BoardEvent =
   | { type: "task.deleted"; taskId: string }
   | { type: "column.created"; column: SerializedColumn }
   | { type: "column.updated"; column: SerializedColumn }
+  | { type: "column.moved"; columnId: string; position: string }
   | { type: "column.deleted"; columnId: string };
 
 export type SerializedTask = {

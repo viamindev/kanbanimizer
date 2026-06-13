@@ -9,8 +9,11 @@ import type { BoardEvent } from "@/lib/events";
 import {
   createColumnAction,
   createTaskAction,
+  deleteColumnAction,
   deleteTaskAction,
+  moveColumnAction,
   moveTaskAction,
+  renameColumnAction,
   updateTaskAction,
 } from "@/app/board-actions";
 import { InvitePanel } from "./invite-panel";
@@ -32,7 +35,7 @@ export function BoardView({
   const [columns, setColumns] = useState<ColumnT[]>(initialColumns);
   const [connected, setConnected] = useState(false);
   const [activeTask, setActiveTask] = useState<TaskT | null>(null);
-  const draggingId = useRef<string | null>(null);
+  const drag = useRef<{ type: "task" | "column"; id: string } | null>(null);
 
   const dispatch = useCallback(
     (ev: BoardEvent) => setColumns((cols) => applyEvent(cols, ev)),
@@ -112,6 +115,55 @@ export function BoardView({
     }
   }
 
+  async function renameColumn(columnId: string, name: string) {
+    const column = await renameColumnAction({ columnId, name });
+    dispatch({ type: "column.updated", column });
+  }
+
+  async function removeColumn(columnId: string) {
+    dispatch({ type: "column.deleted", columnId });
+    await deleteColumnAction(columnId);
+  }
+
+  async function moveColumn(columnId: string, beforeColumnId: string | null) {
+    const others = columns
+      .filter((c) => c.id !== columnId)
+      .sort((a, b) => (a.position < b.position ? -1 : 1));
+
+    let lower: string | null;
+    let upper: string | null;
+    if (beforeColumnId === null) {
+      lower = others.at(-1)?.position ?? null;
+      upper = null;
+    } else {
+      const idx = others.findIndex((c) => c.id === beforeColumnId);
+      lower = idx > 0 ? others[idx - 1].position : null;
+      upper = others[idx]?.position ?? null;
+    }
+
+    let position: string;
+    try {
+      position = positionBetween(lower, upper);
+    } catch {
+      position = positionBetween(others.at(-1)?.position ?? null, null);
+    }
+
+    dispatch({ type: "column.moved", columnId, position });
+    try {
+      await moveColumnAction({ columnId, position });
+    } catch {
+      router.refresh();
+    }
+  }
+
+  // drop onto a column: reorder columns, or move the dragged task into it
+  function handleDrop(targetColumnId: string, beforeTaskId: string | null) {
+    const d = drag.current;
+    if (!d) return;
+    if (d.type === "column") moveColumn(d.id, targetColumnId);
+    else moveTask(d.id, targetColumnId, beforeTaskId);
+  }
+
   /* ------------------------------- render ----------------------------- */
 
   return (
@@ -135,14 +187,19 @@ export function BoardView({
             column={col}
             onAddTask={(title) => addTask(col.id, title)}
             onOpenTask={setActiveTask}
-            onDropTask={(beforeTaskId) => {
-              if (draggingId.current)
-                moveTask(draggingId.current, col.id, beforeTaskId);
-            }}
-            onDragStart={(id) => (draggingId.current = id)}
+            onDrop={(beforeTaskId) => handleDrop(col.id, beforeTaskId)}
+            onTaskDragStart={(id) => (drag.current = { type: "task", id })}
+            onColumnDragStart={(id) => (drag.current = { type: "column", id })}
+            onRename={(name) => renameColumn(col.id, name)}
+            onDelete={() => removeColumn(col.id)}
           />
         ))}
-        <AddColumn onAdd={addColumn} />
+        <AddColumn
+          onAdd={addColumn}
+          onDropColumn={() => {
+            if (drag.current?.type === "column") moveColumn(drag.current.id, null);
+          }}
+        />
       </div>
 
       {activeTask && (
@@ -166,17 +223,25 @@ function ColumnView({
   column,
   onAddTask,
   onOpenTask,
-  onDropTask,
-  onDragStart,
+  onDrop,
+  onTaskDragStart,
+  onColumnDragStart,
+  onRename,
+  onDelete,
 }: {
   column: ColumnT;
   onAddTask: (title: string) => void;
   onOpenTask: (task: TaskT) => void;
-  onDropTask: (beforeTaskId: string | null) => void;
-  onDragStart: (taskId: string) => void;
+  onDrop: (beforeTaskId: string | null) => void;
+  onTaskDragStart: (taskId: string) => void;
+  onColumnDragStart: (columnId: string) => void;
+  onRename: (name: string) => void;
+  onDelete: () => void;
 }) {
   const [adding, setAdding] = useState(false);
   const [title, setTitle] = useState("");
+  const [editingName, setEditingName] = useState(false);
+  const [name, setName] = useState(column.name);
   const tasks = [...column.tasks].sort((a, b) =>
     a.position < b.position ? -1 : 1,
   );
@@ -188,18 +253,68 @@ function ColumnView({
     setAdding(false);
   }
 
+  function submitName() {
+    const n = name.trim();
+    if (n && n !== column.name) onRename(n);
+    else setName(column.name);
+    setEditingName(false);
+  }
+
   return (
     <div
       className="flex w-72 shrink-0 flex-col rounded-base border-2 border-border bg-secondary-background"
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => {
         e.preventDefault();
-        onDropTask(null); // dropped on empty column area → append
+        onDrop(null); // dropped on empty column area → append task / reorder column
       }}
     >
-      <div className="flex items-center justify-between border-b-2 border-border px-3 py-2">
-        <span className="font-heading">{column.name}</span>
+      <div
+        draggable={!editingName}
+        onDragStart={(e) => {
+          onColumnDragStart(column.id);
+          e.stopPropagation();
+        }}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onDrop(null); // dropping on the header reorders columns
+        }}
+        className="flex cursor-grab items-center justify-between gap-2 border-b-2 border-border px-3 py-2 active:cursor-grabbing"
+      >
+        {editingName ? (
+          <Input
+            autoFocus
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onBlur={submitName}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") submitName();
+              if (e.key === "Escape") {
+                setName(column.name);
+                setEditingName(false);
+              }
+            }}
+            className="h-7"
+          />
+        ) : (
+          <span
+            className="flex-1 truncate font-heading"
+            onDoubleClick={() => setEditingName(true)}
+            title="Двойной клик — переименовать"
+          >
+            {column.name}
+          </span>
+        )}
         <span className="text-xs text-foreground/50">{tasks.length}</span>
+        <button
+          onClick={onDelete}
+          title="Удалить колонку"
+          className="rounded-base px-1 text-foreground/50 hover:bg-chart-2/30 hover:text-foreground"
+        >
+          ×
+        </button>
       </div>
 
       <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-2">
@@ -207,12 +322,15 @@ function ColumnView({
           <div
             key={task.id}
             draggable
-            onDragStart={() => onDragStart(task.id)}
+            onDragStart={(e) => {
+              onTaskDragStart(task.id);
+              e.stopPropagation();
+            }}
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              onDropTask(task.id); // insert before this task
+              onDrop(task.id); // insert before this task
             }}
             onClick={() => onOpenTask(task)}
             className="cursor-grab rounded-base border-2 border-border bg-background p-2 text-sm shadow-shadow active:cursor-grabbing"
@@ -263,7 +381,13 @@ function ColumnView({
 
 /* ----------------------------- add column ------------------------------ */
 
-function AddColumn({ onAdd }: { onAdd: (name: string) => void }) {
+function AddColumn({
+  onAdd,
+  onDropColumn,
+}: {
+  onAdd: (name: string) => void;
+  onDropColumn: () => void;
+}) {
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
 
@@ -275,7 +399,14 @@ function AddColumn({ onAdd }: { onAdd: (name: string) => void }) {
   }
 
   return (
-    <div className="w-72 shrink-0">
+    <div
+      className="w-72 shrink-0"
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => {
+        e.preventDefault();
+        onDropColumn(); // drop here → move column to the end
+      }}
+    >
       {adding ? (
         <div className="flex flex-col gap-2 rounded-base border-2 border-border bg-secondary-background p-2">
           <Input

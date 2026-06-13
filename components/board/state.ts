@@ -30,6 +30,12 @@ export function applyEvent(columns: ColumnT[], ev: BoardEvent): ColumnT[] {
       return columns.map((c) =>
         c.id === ev.column.id ? { ...c, name: ev.column.name } : c,
       );
+    case "column.moved":
+      return columns
+        .map((c) =>
+          c.id === ev.columnId ? { ...c, position: ev.position } : c,
+        )
+        .sort(byPosition);
     case "column.deleted":
       return columns.filter((c) => c.id !== ev.columnId);
 

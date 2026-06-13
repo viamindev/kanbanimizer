@@ -204,6 +204,29 @@ export async function renameColumnAction(input: {
   return serialized;
 }
 
+const moveColumnSchema = z.object({
+  columnId: z.string().uuid(),
+  position: z.string().min(1).max(200),
+});
+
+export async function moveColumnAction(input: {
+  columnId: string;
+  position: string;
+}): Promise<void> {
+  const user = await requireUser();
+  const data = moveColumnSchema.parse(input);
+  const { boardId } = await requireColumnAccess(data.columnId, user.id);
+  await prisma.column.update({
+    where: { id: data.columnId },
+    data: { position: data.position },
+  });
+  publish(boardId, {
+    type: "column.moved",
+    columnId: data.columnId,
+    position: data.position,
+  });
+}
+
 export async function deleteColumnAction(columnId: string): Promise<void> {
   const user = await requireUser();
   const { boardId } = await requireColumnAccess(columnId, user.id);
