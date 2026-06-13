@@ -9,7 +9,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgres"
 }
 
 enum Role {
@@ -25,10 +25,24 @@ enum InviteStatus {
 }
 
 model User {
-  id          String       @id @default(uuid())
-  email       String       @unique
-  name        String
-  memberships Membership[]
+  id           String       @id @default(uuid())
+  email        String       @unique
+  name         String
+  passwordHash String
+  createdAt    DateTime     @default(now())
+  memberships  Membership[]
+  invitations  Invitation[]
+  sessions     Session[]
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 model Project {
@@ -50,6 +64,8 @@ model Membership {
   role             Role               @default(MEMBER)
   allSubprojects   Boolean            @default(false)
   subProjectAccess SubprojectAccess[]
+  revokedAt        DateTime?
+  revokedById      String?
 
   @@unique([projectId, userId])
 }
@@ -104,6 +120,8 @@ model Task {
   title       String
   description String?
   position    String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
   tags        Tag[] // implicit many-to-many, Prisma сама создаст join-таблицу
   attachments Attachment[]
 
@@ -137,6 +155,9 @@ model Invitation {
   email          String
   token          String                 @unique
   status         InviteStatus           @default(PENDING)
+  invitedBy      User                   @relation(fields: [invitedById], references: [id])
+  invitedById    String
+  role           Role                   @default(MEMBER)
   allSubprojects Boolean                @default(false)
   subprojects    InvitationSubproject[]
   createdAt      DateTime               @default(now())
@@ -150,4 +171,13 @@ model InvitationSubproject {
   subprojectId String
 
   @@id([invitationId, subprojectId])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  action    String
+  userId    String
+  projectId String?
+  meta      Json?
+  createdAt DateTime @default(now())
 }

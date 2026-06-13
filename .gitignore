@@ -15,5 +15,7 @@ yarn-error.log*
 
 *.db
 
+*.tsbuildinfo
+
 .DS_Store
 /app/generated/prisma
