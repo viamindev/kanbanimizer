@@ -19,19 +19,19 @@ enum Role {
 
 //
 model User {
-  id              String          @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  email           String          @unique
-  password        String
-  name            String
-  avatar          String?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  projects        Project[]
-  projectMembers  ProjectMember[]
-  authoredTasks   Task[]          @relation("AuthorTasks")
-  assignedTasks   Task[]          @relation("AssigneeTasks")
-  createdInvites  ProjectInvite[] @relation("CreatedBy")
-  usedInvites     ProjectInvite[] @relation("UsedInvites")
+  id             String          @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  email          String          @unique
+  password       String
+  name           String
+  avatar         String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  projects       Project[]
+  projectMembers ProjectMember[]
+  authoredTasks  Task[]          @relation("AuthorTasks")
+  assignedTasks  Task[]          @relation("AssigneeTasks")
+  createdInvites ProjectInvite[] @relation("CreatedBy")
+  usedInvites    ProjectInvite[] @relation("UsedInvites")
 }
 
 model Project {
@@ -42,6 +42,7 @@ model Project {
   ownerId        String          @db.Uuid
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
+  deletedAt      DateTime?
   projectMembers ProjectMember[]
   projectInvites ProjectInvite[]
   sections       Section[]
@@ -122,7 +123,7 @@ model Task {
   author     User     @relation("AuthorTasks", fields: [authorId], references: [id])
   authorId   String   @db.Uuid
   assignee   User?    @relation("AssigneeTasks", fields: [assigneeId], references: [id])
-  assigneeId String?   @db.Uuid
+  assigneeId String?  @db.Uuid
   order      Float
   metadata   Json
   createdAt  DateTime @default(now())
