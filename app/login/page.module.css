@@ -1,0 +1,15 @@
+.auth-login {
+    display: flex;
+}
+
+.login__form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.login__form label {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}

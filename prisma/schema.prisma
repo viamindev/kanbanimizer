@@ -84,6 +84,7 @@ model Section {
   order                 Float
   createdAt             DateTime              @default(now())
   updatedAt             DateTime              @updatedAt
+  deletedAt             DateTime?
   sectionAccesses       SectionAccess[]
   boards                Board[]
   inviteSectionAccesses InviteSectionAccess[]

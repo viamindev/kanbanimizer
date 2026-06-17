@@ -1,0 +1,15 @@
+.auth-register {
+    display: flex;
+}
+
+.register__form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.register__form label {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}

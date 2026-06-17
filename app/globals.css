@@ -72,3 +72,7 @@
     @apply font-heading;
   }
 }
+
+.container {
+  padding: 50px 30px;
+}
