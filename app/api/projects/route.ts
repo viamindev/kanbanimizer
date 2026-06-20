@@ -60,6 +60,12 @@ export async function GET() {
             },
             orderBy: { createdAt: "desc" },
             include: {
+                owner: {
+                    select: {
+                        id: true,
+                        name: true
+                    }
+                },
                 projectMembers: {
                     where: { userId: user.id },
                     select: { role: true }

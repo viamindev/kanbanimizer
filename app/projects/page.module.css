@@ -1,0 +1,34 @@
+.projectList {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.projectItem {
+    display: flex;
+    flex-direction: row;
+    gap: 30px;
+    justify-content: space-between;
+    background-color: white;
+    padding: 10px 20px;
+    border-radius: 6px;
+}
+
+.projectItem__id,
+.projectItem__header,
+.projectItem__description,
+.projectItem__owner {
+    font-size: 12px;
+}
+
+.projectItem__id {
+
+}
+
+.projectItem__header {
+
+}
+
+.projectItem__description {
+
+}
