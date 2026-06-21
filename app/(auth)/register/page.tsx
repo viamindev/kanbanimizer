@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import styles from "./page.module.css";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import Link from "next/link";
 
 export default function RegisterPage() {
     const [name, setName] = useState<string>('');
@@ -58,8 +59,8 @@ export default function RegisterPage() {
 
     return (
         <section className={styles['auth-register']}>
+            <h1 className={styles['auth-register__header']}>Регистрация</h1>
             <form className={styles['register__form']} onSubmit={handleSubmit}>
-
                 <Label className={styles['register__label-name']} htmlFor="name">
                     Имя пользователя:
                     <Input className={styles['register__input-name']} type="text" id="name" value={name} onChange={(e) => setName(e.target.value)} />
@@ -80,7 +81,11 @@ export default function RegisterPage() {
                 {success && <p className={styles['register__success']}>Успешная регистрация</p>}
 
                 <Button className={styles['register__button-submit']} type="submit">Зарегистрировать</Button>
+
             </form>
+            <Button>
+                <Link href={"/login"}>Войти</Link>
+            </Button>
         </section>
     )
 }

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import styles from './page.module.css';
+import Link from "next/link";
 
 export default function LoginPage() {
     const [email, setEmail] = useState<string>('');
@@ -44,6 +45,7 @@ export default function LoginPage() {
 
     return (
         <section className={styles['auth-login']}>
+            <h1 className={styles['auth-login__header']}>Вход</h1>
             <form className={styles['login__form']} onSubmit={handleSubmit} >
                 <Label className={styles['login__label-email']} htmlFor="email">
                     Email:
@@ -56,10 +58,11 @@ export default function LoginPage() {
                 </Label>
 
                 {error && <p className={styles['login__error']}>{error}</p>}
-
                 <Button type="submit">Войти</Button>
             </form>
+            <Button>
+                <Link href={"/register"}>Регистрация</Link>
+            </Button>
         </section>
-
     )
 }

@@ -51,7 +51,6 @@ export default function ProjectsPage() {
                     <Link href={`/projects/${project.id}`} className={styles['projectItem']} >
                         <span className={styles['projectItem__id']}>{index + 1}</span>
                         <span className={styles['projectItem__header']}>{project.name}</span>
-                        {/* {project.description && <p className={styles['projectItem__description']}>{project.description}</p>} */}
                         <p className={styles[`projectItem__ownerName`]}>{project.owner.name}</p>
                     </Link>
                 </Button>

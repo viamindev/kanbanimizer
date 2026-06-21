@@ -63,8 +63,8 @@ export default function ProjectSectionsPage() {
     return (
         <section className={styles["sectionCardList"]}>
             {sections.map((section, index) => (
-                <Button asChild key={section.id}>
-                    <Link href={`/projects/${project.id}/sections/${section.id}`} className={styles['']} >
+                <Button className={styles["sectionCardItem"]} asChild key={section.id}>
+                    <Link className={styles["sectionCardItem__link"]} href={`/projects/${project.id}/sections/${section.id}`}>
                         <span className={styles['']}>{index + 1}</span>
                         <span className={styles['']}>{section.name}</span>
                         <p className={styles[``]}>{section.author.name}</p>

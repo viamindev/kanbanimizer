@@ -1,14 +1,16 @@
-.auth-login {
+.auth-register {
     display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
-.login__form {
+.register__form {
     display: flex;
     flex-direction: column;
     gap: 10px;
 }
 
-.login__form label {
+.register__form label {
     display: flex;
     flex-direction: column;
     gap: 10px;
