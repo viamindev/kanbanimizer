@@ -37,14 +37,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         const newOrder = lastSection ? lastSection.order + 1 : 1;
 
 
-
         const { name } = parsed.data;
 
         const section = await prisma.section.create({
             data: {
                 name,
                 projectId: id,
-                order: newOrder
+                order: newOrder,
+                authorId: user.id
             }
         })
 
@@ -61,12 +61,18 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     try {
         const user = await getCurrentUser();
         const { id } = await params;
-
         const member = await prisma.projectMember.findFirst({
             where: { projectId: id, userId: user.id }
         })
 
         if (!member) return NextResponse.json({ error: "Нет доступа" }, { status: 403 });
+
+        const project = await prisma.project.findFirst({
+            where: { id, deletedAt: null },
+            select: { id: true, name: true, description: true }
+        })
+
+        if (!project) return NextResponse.json({ error: "Проект не найден" }, { status: 404 });
 
         const sections = await prisma.section.findMany({
             where: {
@@ -78,10 +84,16 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
                     }
                 })
             },
-            orderBy: { order: "asc" }
+            orderBy: { order: "asc" },
+            include: {
+                author: { select: { id: true, name: true } }
+            }
         })
 
-        return NextResponse.json(sections, { status: 200 });
+        return NextResponse.json({
+            project: { ...project, currentUserRole: member.role },
+            sections
+        }, { status: 200 });
     } catch (e) {
         if (e instanceof UnauthorizedError) {
             return NextResponse.json({ error: "Не авторизован" }, { status: 401 })

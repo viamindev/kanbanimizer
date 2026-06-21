@@ -50,7 +50,7 @@ export default function ProjectsPage() {
                 <Button asChild key={project.id}>
                     <Link href={`/projects/${project.id}`} className={styles['projectItem']} >
                         <span className={styles['projectItem__id']}>{index + 1}</span>
-                        <h2 className={styles['projectItem__header']}>{project.name}</h2>
+                        <span className={styles['projectItem__header']}>{project.name}</span>
                         {/* {project.description && <p className={styles['projectItem__description']}>{project.description}</p>} */}
                         <p className={styles[`projectItem__ownerName`]}>{project.owner.name}</p>
                     </Link>

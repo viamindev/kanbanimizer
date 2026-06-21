@@ -4,8 +4,8 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client-js"
-  output   = "../app/generated/prisma"
+  provider        = "prisma-client-js"
+  output          = "../app/generated/prisma"
   previewFeatures = ["driverAdapters"]
 }
 
@@ -20,19 +20,20 @@ enum Role {
 
 //
 model User {
-  id             String          @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  email          String          @unique
-  password       String
-  name           String
-  avatar         String?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  projects       Project[]
-  projectMembers ProjectMember[]
-  authoredTasks  Task[]          @relation("AuthorTasks")
-  assignedTasks  Task[]          @relation("AssigneeTasks")
-  createdInvites ProjectInvite[] @relation("CreatedBy")
-  usedInvites    ProjectInvite[] @relation("UsedInvites")
+  id               String          @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  email            String          @unique
+  password         String
+  name             String
+  avatar           String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  projects         Project[]
+  projectMembers   ProjectMember[]
+  authoredTasks    Task[]          @relation("AuthorTasks")
+  assignedTasks    Task[]          @relation("AssigneeTasks")
+  createdInvites   ProjectInvite[] @relation("CreatedBy")
+  usedInvites      ProjectInvite[] @relation("UsedInvites")
+  authoredSections Section[]       @relation("AuthorSections")
 }
 
 model Project {
@@ -89,6 +90,8 @@ model Section {
   sectionAccesses       SectionAccess[]
   boards                Board[]
   inviteSectionAccesses InviteSectionAccess[]
+  author                User                  @relation("AuthorSections", fields: [authorId], references: [id])
+  authorId              String                @db.Uuid
 }
 
 model InviteSectionAccess {
