@@ -45,6 +45,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
                 projectId: id,
                 order: newOrder,
                 authorId: user.id
+            },
+            include: {
+                author: {
+                    select: {
+                        id: true,
+                        name: true
+                    }
+                }
             }
         })
 

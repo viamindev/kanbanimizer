@@ -5,24 +5,14 @@ import { useParams } from "next/navigation"
 import styles from "./page.module.css"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import CreateSectionForm from "@/components/layout/sections/createSectionForm"
+import { Section } from "@/types/section"
 
 type Project = {
     id: string,
     name: string,
     description: string | null,
     currentUserRole: "OWNER" | "MEMBER"
-}
-
-type Section = {
-    id: string,
-    name: string,
-    createdAt: Date,
-    updatedAt: Date,
-    authorId: string,
-    author: {
-        id: string,
-        name: string
-    }
 }
 
 type SectionsResponse = {
@@ -37,6 +27,7 @@ export default function ProjectSectionsPage() {
 
     const params = useParams()
     const id = params.id as string;
+
 
 
     useEffect(() => {
@@ -60,8 +51,13 @@ export default function ProjectSectionsPage() {
     if(loading) return <p>Загрузка...</p>
     if(!project) return <p>Проект не найден</p>
 
+    function handleCreated(newSection: Section) {
+        setSections((previous) => [...previous, newSection]);
+    }
+
     return (
         <section className={styles["sectionCardList"]}>
+            {project.currentUserRole === "OWNER" && ( <CreateSectionForm projectId={id} onCreated={handleCreated}/>)}
             {sections.map((section, index) => (
                 <Button className={styles["sectionCardItem"]} asChild key={section.id}>
                     <Link className={styles["sectionCardItem__link"]} href={`/projects/${project.id}/sections/${section.id}`}>
