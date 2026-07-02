@@ -1,12 +1,5 @@
-import express from "express";
+import { env } from './config/env';
+import { app } from './app';
 
-const app = express();
-const port = 8000;
+app.listen(env.PORT, () => console.log(`Listening port ${env.PORT}`));
 
-app.get('/', (req, res) => {
-    res.send('Hello');
-});
-
-app.listen(port, ()=> {
-    console.log(`Listening port  ${port}`);
-})
