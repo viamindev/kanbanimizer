@@ -4,6 +4,7 @@ import { usersTable } from '@/db/schema/users';
 import { RegisterInput, LoginInput } from '@/modules/auth/auth.schema';
 import { eq } from 'drizzle-orm';
 import { signAccessToken, signRefreshToken } from '@/utils/jwt';
+import { saveRefreshToken } from './token.service';
 
 export async function RegisterUser({ email, username, password }: RegisterInput) {
     const isEmailBusy = await db.select().from(usersTable).where(eq(usersTable.email, email));
@@ -17,13 +18,16 @@ export async function RegisterUser({ email, username, password }: RegisterInput)
             const {id, email, username} = user[0];
             const accessToken = signAccessToken({ userId: id });
             const refreshToken = signRefreshToken({ userId: id });
+
+            await saveRefreshToken(id, refreshToken);
+
             return { user: { id, email, username}, accessToken, refreshToken}
         } else {
             console.error('Ошибка ответа базы данных на регистрацию')
         }
 
     } catch (e) {
-        throw new Error('База данных не отвечает на регистрацию' + e);
+        throw new Error('База данных не отвечает на регистрацию');
     }
 }
 
@@ -42,6 +46,8 @@ export async function LoginUser({ email, password }: LoginInput) {
 
         const accessToken = signAccessToken({ userId: id });
         const refreshToken = signRefreshToken({ userId: id });
+
+        await saveRefreshToken(id, refreshToken);
 
         console.log(`Удачный вход: ${id}, ${username}, ${email}`);
         return { user: { id, email, username }, accessToken: accessToken, refreshToken: refreshToken }
