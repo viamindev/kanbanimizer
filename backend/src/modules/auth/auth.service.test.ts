@@ -10,7 +10,7 @@ describe('registerUser', () => {
         await db.delete(usersTable).where(eq(usersTable.email, testEmail));
     })
 
-    it('Успешная регистрация и не палит ли хешированный пароль', async () => {
+    it('Success register with valid values', async () => {
         const result = await RegisterUser({ email: testEmail, username: 'testuser', password: 'passwordtest' });
 
         expect(result?.user.email).toBe(testEmail);
@@ -19,17 +19,17 @@ describe('registerUser', () => {
         expect(result?.refreshToken).toBeTypeOf('string');
     });
 
-    it('Проверка на занятость почты', async () => {
+    it('Check busy email', async () => {
         await RegisterUser({ email: testEmail, username: 'randomusername', password: 'password123' })
 
         await expect(
             RegisterUser({ email: testEmail, username: 'other', password: 'password123' })
-        ).rejects.toThrow('Email уже занят');
+        ).rejects.toThrow('Email is already busy');
     });
 });
 
 describe('loginUser', ()=> {
-    it('Успешный логин и не палится пароль', async () => {
+    it('Access login with no password leaks', async () => {
         RegisterUser({ email: testEmail, username: 'testuser', password:"password123"})
 
         const result = await LoginUser({email: testEmail, password:"password123"});

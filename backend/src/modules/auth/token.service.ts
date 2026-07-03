@@ -6,7 +6,6 @@ import { eq } from 'drizzle-orm';
 import { refreshTokensTable } from "@/db/schema/refreshTokens";
 import { verifyRefreshToken, signAccessToken, signRefreshToken } from "@/utils/jwt";
 
-//Хешируем рефреш токен и создаем метку времени истечения + пушим в бд
 export async function saveRefreshToken(userId: string, token: string) {
     const tokenHash = hashToken(token);
     const expiresAt = new Date(Date.now() + ms(env.REFRESH_TOKEN_TTL as ms.StringValue));
@@ -20,7 +19,7 @@ export async function saveRefreshToken(userId: string, token: string) {
 export async function rotateRefreshToken(oldToken: string) {
     const isVerifiedRefreshToken = verifyRefreshToken(oldToken);
     if (!isVerifiedRefreshToken) {
-        throw new Error('Refresh токен истек, залогиньтесь снова!')
+        throw new Error('Refresh token expired or invalid')
     }
     const tokenHash = hashToken(oldToken);
 
@@ -31,15 +30,13 @@ export async function rotateRefreshToken(oldToken: string) {
         .where(eq(refreshTokensTable.tokenHash, tokenHash));
 
     if (!validToken) {
-        throw new Error('Токен не найден в базе');
+        throw new Error('Refresh token not found');
     }
 
-    //Удаляем токен
     await db
         .delete(refreshTokensTable)
         .where(eq(refreshTokensTable.id, validToken.id));
 
-    //Формируем новый токен
     const accessToken = signAccessToken({ userId: validToken.userId });
     const refreshToken = signRefreshToken({ userId: validToken.userId });
 

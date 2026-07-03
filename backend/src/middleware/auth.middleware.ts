@@ -12,7 +12,7 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
 
     const payload = verifyAccessToken(token);
     if(!payload) {
-        return res.status(401).json({message: 'Не авторизован'});
+        return res.status(401).json({message: 'Unauthorized'});
     }
 
     req.userId = payload.userId;
