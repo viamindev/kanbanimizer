@@ -29,3 +29,7 @@ export async function login(req: Request, res: Response) {
         return res.status(400).json({error: message})
     }
 }
+
+export async function test(req: Request, res: Response) {
+    res.json({ message: 'Защищённый роут пройден ', userId: req.userId});
+}
