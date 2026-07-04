@@ -1,11 +1,11 @@
 import { Router } from "express";
-import { register, login, logout, refresh } from "./auth.controller";
-import { requireAuth } from "@/middleware/auth.middleware";
+import * as authController from "./auth.controller";
+import * as authMiddleware from "@/middleware/auth.middleware";
 
 const router = Router();
-router.post('/register', register);
-router.post('/login', login);
-router.post('/logout', requireAuth, logout);
-router.post('/refresh', refresh);
+router.post('/register', authController.register);
+router.post('/login', authController.login);
+router.post('/logout', authMiddleware.requireAuth, authController.logout);
+router.post('/refresh', authController.refresh);
 
 export default router;

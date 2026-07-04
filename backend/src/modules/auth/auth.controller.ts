@@ -1,13 +1,13 @@
-import { RegisterUser, LoginUser } from "./auth.service";
-import { LoginSchema, RegisterSchema, TokenSchema } from "./auth.schema";
+import * as authService from "./auth.service";
+import * as authSchema from "./auth.schema";
 import { Request, Response } from "express";
-import { logoutUser, rotateRefreshToken } from "./token.service";
+import * as tokenService from "./token.service";
 
 export async function register(req: Request, res: Response) {
     try {
-        const user = RegisterSchema.parse(req.body);
+        const user = authSchema.RegisterSchema.parse(req.body);
 
-        const accessedRegister = await RegisterUser(user);
+        const accessedRegister = await authService.RegisterUser(user);
         if (accessedRegister) {
             return res.status(201).json({ message: 'Registration successful', data: accessedRegister })
         }
@@ -19,8 +19,8 @@ export async function register(req: Request, res: Response) {
 
 export async function login(req: Request, res: Response) {
     try {
-        const user = LoginSchema.parse(req.body);
-        const accessedLogin = await LoginUser(user);
+        const user = authSchema.LoginSchema.parse(req.body);
+        const accessedLogin = await authService.LoginUser(user);
 
         if (accessedLogin) {
             return res.status(200).json({ message: 'Authentication successful', data: accessedLogin })
@@ -33,8 +33,8 @@ export async function login(req: Request, res: Response) {
 
 export async function refresh(req: Request, res: Response) {
     try {
-        const token = TokenSchema.parse(req.body).refreshToken;
-        const result = await rotateRefreshToken(token);
+        const token = authSchema.TokenSchema.parse(req.body).refreshToken;
+        const result = await tokenService.rotateRefreshToken(token);
 
         return res.status(200).json(result);
     } catch {
@@ -44,8 +44,8 @@ export async function refresh(req: Request, res: Response) {
 
 export async function logout(req: Request, res: Response) {
     try {
-        const token = TokenSchema.parse(req.body).refreshToken;
-        await logoutUser(token);
+        const token = authSchema.TokenSchema.parse(req.body).refreshToken;
+        await tokenService.logoutUser(token);
         return res.status(200).json({ message: "Logout successful" });
     } catch {
         return res.status(400).json({ message: "Unknown logout error" });

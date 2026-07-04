@@ -3,8 +3,9 @@ import ms from "ms";
 import { env } from "@/config/env";
 import { db } from "@/db";
 import { eq } from 'drizzle-orm';
+
 import { refreshTokensTable } from "@/db/schema/refreshTokens";
-import { verifyRefreshToken, signAccessToken, signRefreshToken } from "@/utils/jwt";
+import * as jwtUtils from "@/utils/jwt";
 
 export async function saveRefreshToken(userId: string, token: string) {
     const tokenHash = hashToken(token);
@@ -15,15 +16,13 @@ export async function saveRefreshToken(userId: string, token: string) {
         .values({ userId, tokenHash, expiresAt });
 }
 
-//Обновляем refresh токен + обновляется access токен
 export async function rotateRefreshToken(oldToken: string) {
-    const isVerifiedRefreshToken = verifyRefreshToken(oldToken);
+    const isVerifiedRefreshToken = jwtUtils.verifyRefreshToken(oldToken);
     if (!isVerifiedRefreshToken) {
         throw new Error('Refresh token expired or invalid')
     }
     const tokenHash = hashToken(oldToken);
 
-    //Ищем токен в бд
     const [validToken] = await db
         .select()
         .from(refreshTokensTable)
@@ -37,8 +36,8 @@ export async function rotateRefreshToken(oldToken: string) {
         .delete(refreshTokensTable)
         .where(eq(refreshTokensTable.id, validToken.id));
 
-    const accessToken = signAccessToken({ userId: validToken.userId });
-    const refreshToken = signRefreshToken({ userId: validToken.userId });
+    const accessToken = jwtUtils.signAccessToken({ userId: validToken.userId });
+    const refreshToken = jwtUtils.signRefreshToken({ userId: validToken.userId });
 
 
     await saveRefreshToken(validToken.userId, refreshToken);

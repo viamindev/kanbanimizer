@@ -1,12 +1,13 @@
 import bcrypt from 'bcrypt';
 import { db } from '@/db/index';
 import { usersTable } from '@/db/schema/users';
-import { RegisterInput, LoginInput } from '@/modules/auth/auth.schema';
 import { eq } from 'drizzle-orm';
-import { signAccessToken, signRefreshToken } from '@/utils/jwt';
-import { saveRefreshToken } from './token.service';
+import * as authSchema from "@/modules/auth/auth.schema";
+import * as jwtUtils from "@/utils/jwt";
+import * as tokenService from "./token.service";
 
-export async function RegisterUser({ email, username, password }: RegisterInput) {
+
+export async function RegisterUser({ email, username, password }: authSchema.RegisterInput) {
     const isEmailBusy = await db.select().from(usersTable).where(eq(usersTable.email, email));
     if (isEmailBusy.length > 0) throw new Error('Email already in use');
 
@@ -16,10 +17,10 @@ export async function RegisterUser({ email, username, password }: RegisterInput)
 
         if (user[0]) {
             const {id, email, username} = user[0];
-            const accessToken = signAccessToken({ userId: id });
-            const refreshToken = signRefreshToken({ userId: id });
+            const accessToken = jwtUtils.signAccessToken({ userId: id });
+            const refreshToken = jwtUtils.signRefreshToken({ userId: id });
 
-            await saveRefreshToken(id, refreshToken);
+            await tokenService.saveRefreshToken(id, refreshToken);
 
             return { user: { id, email, username}, accessToken, refreshToken}
         } else {
@@ -31,7 +32,7 @@ export async function RegisterUser({ email, username, password }: RegisterInput)
     }
 }
 
-export async function LoginUser({ email, password }: LoginInput) {
+export async function LoginUser({ email, password }: authSchema.LoginInput) {
     const foundUser = await db.select().from(usersTable).where(eq(usersTable.email, email));
     if (foundUser.length === 0) throw new Error('Incorrect email or password');
 
@@ -44,10 +45,10 @@ export async function LoginUser({ email, password }: LoginInput) {
     try {
         const { id, username, email } = user;
 
-        const accessToken = signAccessToken({ userId: id });
-        const refreshToken = signRefreshToken({ userId: id });
+        const accessToken = jwtUtils.signAccessToken({ userId: id });
+        const refreshToken = jwtUtils.signRefreshToken({ userId: id });
 
-        await saveRefreshToken(id, refreshToken);
+        await tokenService.saveRefreshToken(id, refreshToken);
         return { user: { id, email, username }, accessToken: accessToken, refreshToken: refreshToken }
     } catch (e) {
         throw new Error('Database error during login')
