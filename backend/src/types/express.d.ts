@@ -1,9 +1,10 @@
 declare global {
-    namespace Express {
-        interface Request {
-            userId?: string
-        }
+  namespace Express {
+    interface Request {
+      userId?: string;
     }
+  }
 }
 
-export {}
+// oxlint-disable-next-line unicorn/require-module-specifiers
+export {};

@@ -1,4 +1,4 @@
-import * as authSchema from "@/modules/auth/auth.schema";
+import type * as authSchema from "@/modules/auth/auth.schema";
 import * as jwtUtils from "@/utils/jwt";
 import * as tokenService from "./token.service";
 import bcrypt from "bcrypt";
@@ -29,17 +29,25 @@ export async function RegisterUser({
       });
 
     if (user[0]) {
-      const { id, email, username } = user[0];
-      const accessToken = jwtUtils.signAccessToken({ userId: id });
-      const refreshToken = jwtUtils.signRefreshToken({ userId: id });
+      const newUser = user[0];
+      const accessToken = jwtUtils.signAccessToken({ userId: newUser.id });
+      const refreshToken = jwtUtils.signRefreshToken({ userId: newUser.id });
 
-      await tokenService.saveRefreshToken(id, refreshToken);
+      await tokenService.saveRefreshToken(newUser.id, refreshToken);
 
-      return { user: { id, email, username }, accessToken, refreshToken };
+      return {
+        user: {
+          id: newUser.id,
+          email: newUser.email,
+          username: newUser.username,
+        },
+        accessToken,
+        refreshToken,
+      };
     } else {
       console.error("Unexpected empty response from database");
     }
-  } catch (e) {
+  } catch {
     throw new Error("Database error during registration");
   }
 }
@@ -58,18 +66,16 @@ export async function LoginUser({ email, password }: authSchema.LoginInput) {
   if (!isValidPassword) throw new Error("Incorrect email or password");
 
   try {
-    const { id, username, email } = user;
+    const accessToken = jwtUtils.signAccessToken({ userId: user.id });
+    const refreshToken = jwtUtils.signRefreshToken({ userId: user.id });
 
-    const accessToken = jwtUtils.signAccessToken({ userId: id });
-    const refreshToken = jwtUtils.signRefreshToken({ userId: id });
-
-    await tokenService.saveRefreshToken(id, refreshToken);
+    await tokenService.saveRefreshToken(user.id, refreshToken);
     return {
-      user: { id, email, username },
+      user: { id: user.id, email: user.email, username: user.username },
       accessToken: accessToken,
       refreshToken: refreshToken,
     };
-  } catch (e) {
+  } catch {
     throw new Error("Database error during login");
   }
 }
