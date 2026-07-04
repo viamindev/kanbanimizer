@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "extends": ["../oxlint.base.json"],
+  "plugins": ["typescript", "oxc", "node", "promise", "import"],
+  "rules": {
+    "typescript/no-floating-promises": "error",
+    "typescript/no-unnecessary-condition": "error",
+    "typescript/no-misused-promises": "error",
+    "typescript/await-thenable": "error",
+    "typescript/strict-boolean-expressions": "error",
+    "typescript/only-throw-error": "warn",
+    "typescript/consistent-type-imports": "warn",
+    "import/no-duplicates": "warn",
+    "promise/prefer-await-to-then": "warn"
+  }
+}
