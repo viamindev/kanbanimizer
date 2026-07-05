@@ -6,8 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "lint": "oxlint -c ../oxlint.base.json .",
+    "lint:fix": "oxlint -c ../oxlint.base.json --fix .",
     "typecheck": "tsc -b --noEmit",
-    "lint": "oxlint",
     "preview": "vite preview"
   },
   "dependencies": {

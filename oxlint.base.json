@@ -2,6 +2,20 @@
   "categories": {
     "correctness": "error",
     "suspicious": "warn",
-    "pedantic": "off"
-  }
+    "perf": "warn",
+    "style": "off",
+    "pedantic": "off",
+    "restriction": "off"
+  },
+  "rules": {
+    "unicorn/no-empty-file": "off"
+  },
+  "ignorePatterns": [
+    "dist/**",
+    "build/**",
+    "coverage/**",
+    "node_modules/**",
+    "frontend/dist/**",
+    "backend/dist/**"
+  ]
 }

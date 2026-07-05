@@ -16,8 +16,9 @@
     "db:push": "drizzle-kit push",
     "db:push:test": "cross-env NODE_ENV=test drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "typecheck": "tsc --noEmit",
-    "lint": "oxlint"
+    "lint": "oxlint -c ../oxlint.base.json .",
+    "lint:fix": "oxlint -c ../oxlint.base.json --fix .",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
