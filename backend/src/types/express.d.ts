@@ -2,6 +2,10 @@ declare global {
   namespace Express {
     interface Request {
       userId: string;
+      membership?: {
+        role: "owner" | "member" | "viewer";
+        projectId: string;
+      };
     }
   }
 }

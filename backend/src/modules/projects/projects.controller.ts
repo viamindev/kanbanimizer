@@ -1,11 +1,11 @@
 import { type Request, type Response } from "express";
 import { createProject, getProjectById, getProjectsByUserId, updateProject, deleteProject } from "./projects.service";
-import { CreateProjectSchema } from "./projects.schema";
-import { UnauthorizedError } from "@/utils/errors";
+import { CreateProjectSchema, UpdateProjectSchema } from "./projects.schema";
+import { BadRequestError, NotFoundError, UnauthorizedError } from "@/utils/errors";
 
 export async function createProjectHandler(req: Request, res: Response) {
-  const { name, description } = CreateProjectSchema.parse(req.body);
   if(!req.userId) throw new UnauthorizedError();
+  const { name, description } = CreateProjectSchema.parse(req.body);
   const ownerId = req.userId;
   const project = await createProject({ name,description,ownerId });
   return res
@@ -23,14 +23,14 @@ export async function getProjectsByUserIdHandler(req: Request, res: Response) {
 }
 
 export async function getProjectByIdHandler(req: Request<{ id: string }>, res: Response) {
-
   if (!req.userId) throw new UnauthorizedError();
+  const userId = req.userId;
 
   const projectId = req.params.id;
-  if (!projectId) throw new Error("Project ID is required");
+  if (!projectId) throw new BadRequestError();
 
-  const project = await getProjectById(projectId);
-  if (!project) throw new Error("Project not found");
+  const project = await getProjectById(projectId, userId);
+  if (!project) throw new NotFoundError();
 
   return res
     .status(200)
@@ -39,22 +39,27 @@ export async function getProjectByIdHandler(req: Request<{ id: string }>, res: R
 
 export async function updateProjectHandler(req: Request<{ id: string }>, res: Response) {
   if (!req.userId) throw new UnauthorizedError();
+  const userId = req.userId;
   const projectId = req.params.id;
-  if (!projectId) throw new Error("Project ID is required");
-  const { name, description } = req.body;
-  const newProject = { name, description, ownerId: req.userId}
-  if (!name && !description) throw new Error("Name or description is required");
-  await updateProject(projectId, newProject);
+  if (!projectId) throw new BadRequestError();
+  const { name, description } = UpdateProjectSchema.parse(req.body);
+  const newProject = { name, description };
+  if (!name && !description) throw new BadRequestError();
+  const updatedProject = await updateProject(projectId, newProject, userId);
   return res
     .status(200)
-    .json({ message: "Project updated successfully" })
+    .json({ message: "Project updated successfully", data: updatedProject })
 }
 
 export async function deleteProjectHandler(req: Request<{ id: string }>, res: Response) {
   if (!req.userId) throw new UnauthorizedError();
+  const userId = req.userId;
   const projectId = req.params.id;
-  if (!projectId) throw new Error("Project ID is required");
-  await deleteProject(projectId);
+  if (!projectId) throw new NotFoundError();
+
+  const deletedProject = await deleteProject(projectId, userId);
+  if (!deletedProject) throw new NotFoundError();
+
   return res
     .status(200)
     .json({ message: "Project removed successfully" })

@@ -1,4 +1,3 @@
-import { projectsTable } from '@/db/schema/projects';
 import z from 'zod';
 
 export const CreateProjectSchema = z.object({
@@ -6,4 +5,9 @@ export const CreateProjectSchema = z.object({
   description: z.string().optional().nullable(),
 });
 
-export type Project = typeof projectsTable.$inferSelect;
+export const UpdateProjectSchema = z.object({
+  name: z.string().optional(),
+  description: z.string().optional().nullable(),
+});
+
+// export type Project = typeof projectsTable.$inferSelect;

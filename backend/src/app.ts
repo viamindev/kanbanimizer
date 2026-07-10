@@ -1,6 +1,6 @@
 import express from "express";
 import authRouter from "./modules/auth/auth.routes";
-import projectsRouter from "./modules/projects/projects.route";
+import projectsRouter from "./modules/projects/projects.routes";
 import cors from "cors";
 import errorMiddleware from "./middleware/error.middleware";
 
