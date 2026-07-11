@@ -4,9 +4,9 @@ import { CreateProjectSchema, UpdateProjectSchema } from "./projects.schema";
 import { BadRequestError, NotFoundError, UnauthorizedError } from "@/utils/errors";
 
 export async function createProjectHandler(req: Request, res: Response) {
-  if(!req.userId) throw new UnauthorizedError();
+  if(!req.user) throw new UnauthorizedError();
   const { name, description } = CreateProjectSchema.parse(req.body);
-  const ownerId = req.userId;
+  const ownerId = req.user.id;
   const project = await createProject({ name,description,ownerId });
   return res
     .status(201)
@@ -14,8 +14,8 @@ export async function createProjectHandler(req: Request, res: Response) {
 }
 
 export async function getProjectsByUserIdHandler(req: Request, res: Response) {
-  if(!req.userId) throw new UnauthorizedError();
-  const userId = req.userId;
+  if(!req.user?.id) throw new UnauthorizedError();
+  const userId = req.user?.id;
   const projects = await getProjectsByUserId(userId);
   return res
     .status(200)
@@ -23,8 +23,8 @@ export async function getProjectsByUserIdHandler(req: Request, res: Response) {
 }
 
 export async function getProjectByIdHandler(req: Request<{ id: string }>, res: Response) {
-  if (!req.userId) throw new UnauthorizedError();
-  const userId = req.userId;
+  if (!req.user?.id) throw new UnauthorizedError();
+  const userId = req.user?.id;
 
   const projectId = req.params.id;
   if (!projectId) throw new BadRequestError();
@@ -38,8 +38,8 @@ export async function getProjectByIdHandler(req: Request<{ id: string }>, res: R
 }
 
 export async function updateProjectHandler(req: Request<{ id: string }>, res: Response) {
-  if (!req.userId) throw new UnauthorizedError();
-  const userId = req.userId;
+  if (!req.user?.id) throw new UnauthorizedError();
+  const userId = req.user.id;
   const projectId = req.params.id;
   if (!projectId) throw new BadRequestError();
   const { name, description } = UpdateProjectSchema.parse(req.body);
@@ -52,8 +52,8 @@ export async function updateProjectHandler(req: Request<{ id: string }>, res: Re
 }
 
 export async function deleteProjectHandler(req: Request<{ id: string }>, res: Response) {
-  if (!req.userId) throw new UnauthorizedError();
-  const userId = req.userId;
+  if (!req.user?.id) throw new UnauthorizedError();
+  const userId = req.user.id;
   const projectId = req.params.id;
   if (!projectId) throw new NotFoundError();
 

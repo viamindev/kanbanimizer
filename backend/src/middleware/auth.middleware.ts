@@ -1,5 +1,6 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { verifyAccessToken } from "@/utils/jwt";
+import { UnauthorizedError } from "@/utils/errors";
 
 export const requireAuth = (
   req: Request,
@@ -9,18 +10,19 @@ export const requireAuth = (
   const authHeader = req.headers.authorization;
 
   if (!authHeader?.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Unauthorized" });
+    return new UnauthorizedError;
   }
 
   const token = authHeader.slice(7);
-
   const payload = verifyAccessToken(token);
 
   if (!payload) {
-    return res.status(401).json({ message: "Unauthorized" });
+    return new UnauthorizedError;
   }
 
-  req.userId = payload.userId;
+  req.user = {
+    id: payload.userId,
+  };
 
-  next();
+    next();
 };

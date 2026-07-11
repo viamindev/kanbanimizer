@@ -1,14 +1,42 @@
-import * as authMiddleware from "@/middleware/auth.middleware";
+import { requireAuth } from "@/middleware/auth.middleware";
+import { requireMembership } from "@/middleware/membership.middleware";
+import { requirePermission } from "@/middleware/permissions.middleware";
 import * as projectsController from './projects.controller';
+import sectionsRouter from "@/modules/sections/sections.routes";
 import { Router } from 'express';
 
 const router = Router();
 
-router.post('/', authMiddleware.requireAuth, projectsController.createProjectHandler);
-router.get('/', authMiddleware.requireAuth, projectsController.getProjectsByUserIdHandler);
-router.get('/:id', authMiddleware.requireAuth, projectsController.getProjectByIdHandler);
-router.patch('/:id', authMiddleware.requireAuth, projectsController.updateProjectHandler);
-router.delete('/:id', authMiddleware.requireAuth, projectsController.deleteProjectHandler);
+router.post('/',
+  requireAuth,
+  projectsController.createProjectHandler);
+
+router.get('/',
+  requireAuth,
+  projectsController.getProjectsByUserIdHandler);
+
+router.get('/:projectId',
+  requireAuth,
+  requireMembership("projectId"),
+  requirePermission("project:read"),
+  projectsController.getProjectByIdHandler);
+
+router.patch('/:projectId',
+  requireAuth,
+  requireMembership("projectId"),
+  requirePermission("project:update"),
+  projectsController.updateProjectHandler);
+
+router.delete('/:projectId',
+  requireAuth,
+  requireMembership("projectId"),
+  requirePermission("project:delete"),
+  projectsController.deleteProjectHandler);
+
+router.use("/:projectId/sections",
+  requireAuth,
+  requireMembership("projectId"),
+  sectionsRouter);
 
 
 export default router;
