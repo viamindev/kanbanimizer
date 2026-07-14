@@ -1,6 +1,8 @@
 import { sectionsTable } from "@/db/schema/sections";
-import { eq, max } from "drizzle-orm";
+import { eq, max, and, asc, or, isNotNull } from "drizzle-orm";
 import { db } from "@/db";
+import { ProjectRole } from "@/utils/permissions";
+import { sectionAccessTable } from "@/db/schema/sectionAccess";
 
 
 type SectionInputCreate = {
@@ -9,6 +11,12 @@ type SectionInputCreate = {
   name: string,
   description?: string,
   visibility: "public" | "private",
+}
+
+type GetAllowedSectionsByProjectId = {
+  projectId: string,
+  userId: string,
+  role: ProjectRole
 }
 
 const POSITION_STEP = 1000;
@@ -22,4 +30,35 @@ export async function createSection({ projectId, createdBy, name, description, v
   const [section] = await db.insert(sectionsTable).values({ id: sectionId, projectId, createdBy, name, description, visibility, position: newPosition }).returning();
 
   return section;
+}
+
+export async function getAllowedSectionsByProjectId({projectId, userId, role}: GetAllowedSectionsByProjectId) {
+  if (role === "owner") {
+    return await db.select().from(sectionsTable).where(eq(sectionsTable.projectId, projectId)).orderBy(asc(sectionsTable.position));
+  }
+
+
+  const rows = await db
+    .select()
+    .from(sectionsTable)
+    .leftJoin(
+      sectionAccessTable,
+      and(
+        eq(sectionAccessTable.sectionId, sectionsTable.id),
+        eq(sectionAccessTable.userId, userId),
+      ),
+    )
+    .where(
+      and(
+        eq(sectionsTable.projectId, projectId),
+        or(
+          eq(sectionsTable.visibility, "public"),
+          eq(sectionsTable.createdBy, userId),
+          isNotNull(sectionAccessTable.id),
+        ),
+      ),
+    )
+    .orderBy(asc(sectionsTable.position));
+
+  return rows.map((row) => row.sections);
 }

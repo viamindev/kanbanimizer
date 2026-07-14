@@ -13,7 +13,7 @@ sectionRouter.post(
 sectionRouter.get(
   '/',
   requirePermission("section:read"),
-  // sectionsController.getSectionsHandler
+  sectionsController.getSectionsHandler
   )
 
 sectionRouter.get(

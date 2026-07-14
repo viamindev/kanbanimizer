@@ -1,7 +1,7 @@
-import { UnauthorizedError } from "@/utils/errors";
+import { ForbiddenError, UnauthorizedError } from "@/utils/errors";
 import type { Request, Response } from "express";
 import { CreateSectionSchema } from "./sections.schema";
-import {createSection } from "./sections.service"
+import {createSection, getAllowedSectionsByProjectId } from "./sections.service"
 
 
 export async function createSectionHandler(
@@ -10,6 +10,7 @@ export async function createSectionHandler(
 ) {
   const projectId = req.params.projectId;
   const userId = req.user?.id;
+
 
   if (!userId) {
     throw new UnauthorizedError();
@@ -30,6 +31,27 @@ export async function createSectionHandler(
     data: section
   })
 }
+
+export async function getSectionsHandler(
+  req: Request<{ projectId: string }>,
+  res: Response,
+) {
+  const projectId = req.params.projectId;
+  const membership = req.membership;
+  const userId = req.user?.id;
+
+
+  if (!userId) throw new UnauthorizedError();
+  if (!membership) throw new ForbiddenError();
+
+  const sections = await getAllowedSectionsByProjectId({ projectId, userId, role: membership?.role });
+
+  return res.status(200).json({
+    message: "Section retrieved successfully",
+    data: sections
+  })
+}
+
 
 
 // export async function getSectionsHandler(

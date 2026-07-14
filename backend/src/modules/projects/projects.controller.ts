@@ -22,11 +22,11 @@ export async function getProjectsByUserIdHandler(req: Request, res: Response) {
     .json({ message: "Projects retrieved successfully", data: projects })
 }
 
-export async function getProjectByIdHandler(req: Request<{ id: string }>, res: Response) {
+export async function getProjectByIdHandler(req: Request<{ projectId: string }>, res: Response) {
   if (!req.user?.id) throw new UnauthorizedError();
   const userId = req.user?.id;
 
-  const projectId = req.params.id;
+  const projectId = req.params.projectId;
   if (!projectId) throw new BadRequestError();
 
   const project = await getProjectById(projectId, userId);

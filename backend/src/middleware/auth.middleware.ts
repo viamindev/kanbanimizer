@@ -10,14 +10,14 @@ export const requireAuth = (
   const authHeader = req.headers.authorization;
 
   if (!authHeader?.startsWith("Bearer ")) {
-    return new UnauthorizedError;
+    throw new UnauthorizedError;
   }
 
   const token = authHeader.slice(7);
   const payload = verifyAccessToken(token);
 
   if (!payload) {
-    return new UnauthorizedError;
+   throw new UnauthorizedError;
   }
 
   req.user = {
