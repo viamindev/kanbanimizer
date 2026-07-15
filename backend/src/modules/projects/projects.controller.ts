@@ -1,5 +1,5 @@
 import { type Request, type Response } from "express";
-import { createProject, getProjectById, getProjectsByUserId, updateProject, deleteProject } from "./projects.service";
+import { createProject, getProjectById, getProjectsByUserId, updateProject, deleteProject, getAssignedUsersInProject } from "./projects.service";
 import { CreateProjectSchema, UpdateProjectSchema } from "./projects.schema";
 import { BadRequestError, NotFoundError, UnauthorizedError } from "@/utils/errors";
 
@@ -11,6 +11,21 @@ export async function createProjectHandler(req: Request, res: Response) {
   return res
     .status(201)
     .json({ message: "Project created successfully", data: project })
+}
+
+export async function getAssignedUsersInProjectHandler(req: Request<{projectId: string}>, res: Response) {
+  const userId = req.user?.id;
+  if (!userId) throw new UnauthorizedError();
+
+  const projectId = req.params.projectId;
+  if (!projectId) throw new BadRequestError();
+
+  const assignedUsers = await getAssignedUsersInProject(projectId);
+
+  return res
+    .status(200)
+    .json({message: "Assigned users: ", data: assignedUsers})
+
 }
 
 export async function getProjectsByUserIdHandler(req: Request, res: Response) {

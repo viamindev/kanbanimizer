@@ -19,7 +19,7 @@ sectionRouter.get(
 sectionRouter.get(
   '/:sectionId',
   requirePermission('section:read'),
-  // sectionsController.getSectionByIdHandler
+  sectionsController.getSectionByIdHandler
 )
 
 sectionRouter.patch(

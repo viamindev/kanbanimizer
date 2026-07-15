@@ -3,7 +3,7 @@ import { db } from "@/db/index";
 import { and, eq } from 'drizzle-orm';
 import { projectMemberTable } from '@/db/schema/projectMembers';
 import crypto from "crypto";
-
+import { usersTable } from '@/db/schema/users';
 
 type ProjectInput = {
   name: string;
@@ -44,4 +44,21 @@ export async function updateProject(projectId: string, project: ProjectInputUpda
 export async function deleteProject(projectId: string, userId: string) {
   const result = await db.delete(projectsTable).where(and(eq(projectsTable.id, projectId), eq(projectsTable.ownerId, userId))).returning();
   return result[0];
+}
+
+export async function getAssignedUsersInProject(projectId: string) {
+    const assignedUsers = await db
+      .select({
+        id: usersTable.id,
+        username: usersTable.username,
+        role: projectMemberTable.role
+      })
+      .from(projectMemberTable)
+      .innerJoin(
+        usersTable,
+        eq(usersTable.id, projectMemberTable.userId),
+      )
+      .where(
+        eq(projectMemberTable.projectId, projectId));
+  return assignedUsers
 }

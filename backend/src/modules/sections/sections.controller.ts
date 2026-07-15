@@ -1,7 +1,7 @@
-import { ForbiddenError, UnauthorizedError } from "@/utils/errors";
+import { ForbiddenError, NotFoundError, UnauthorizedError } from "@/utils/errors";
 import type { Request, Response } from "express";
 import { CreateSectionSchema } from "./sections.schema";
-import {createSection, getAllowedSectionsByProjectId } from "./sections.service"
+import {createSection, getAllowedSectionsByProjectId, getAllowedSectionById } from "./sections.service"
 
 
 export async function createSectionHandler(
@@ -52,22 +52,32 @@ export async function getSectionsHandler(
   })
 }
 
+export async function getSectionByIdHandler(
+  req: Request<{
+    projectId: string;
+    sectionId: string;
+  }>,
+  res: Response,
+) {
+  const membership = req.membership;
+  const userId = req.user?.id;
+  const projectId = req.params.projectId;
+  const sectionId = req.params.sectionId;
 
+  if (!userId) throw new UnauthorizedError();
+  if (!membership) throw new ForbiddenError();
 
-// export async function getSectionsHandler(
-//   req: Request<{ projectId: string }>,
-//   res: Response,
-// ) {
-//   const projectId = req.params.projectId;
-//   const userId = req.user?.id;
+  const section = await getAllowedSectionById({
+    projectId: projectId,
+    sectionId: sectionId,
+    userId,
+    role: membership?.role
+  })
 
-//   const sections = await getSectionsByProjectId({
-//     projectId,
-//     userId
-//   });
+  if (!section) throw new NotFoundError("Section not found");
 
-//   return res.status(200).json({
-//     message: "Section retrieved successfully",
-//     data: sections
-//   })
-// }
+  return res.status(200).json({
+    message: "Section retrieved successfully",
+    data: section
+  })
+}

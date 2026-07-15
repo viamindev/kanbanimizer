@@ -15,6 +15,12 @@ router.get('/',
   requireAuth,
   projectsController.getProjectsByUserIdHandler);
 
+router.get('/:projectId/members',
+  requireAuth,
+  requireMembership("projectId"),
+  requirePermission("member:read"),
+  projectsController.getAssignedUsersInProjectHandler);
+
 router.get('/:projectId',
   requireAuth,
   requireMembership("projectId"),

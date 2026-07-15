@@ -2,6 +2,7 @@ export type ProjectRole = "owner" | "member" | "viewer";
 
 export type Action =
   | "project:read"
+  | "member:read"
   | "project:update"
   | "project:delete"
   | "project:ownership:transfer"
@@ -47,6 +48,7 @@ export function can(
 
   if (role === "member") {
     switch (action) {
+      case "member:read":
       case "project:read":
       case "section:read":
       case "board:read":
