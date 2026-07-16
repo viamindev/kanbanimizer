@@ -1,9 +1,9 @@
-import { requireAuth } from "@/middleware/auth.middleware";
-import { requireMembership } from "@/middleware/membership.middleware";
-import { requirePermission } from "@/middleware/permissions.middleware";
-import * as projectsController from './projects.controller';
-import sectionsRouter from "@/modules/sections/sections.routes";
-import { Router } from 'express';
+import { requireAuth } from "@/middleware/auth.middleware"
+import { requireMembership } from "@/middleware/membership.middleware"
+import { requirePermission } from "@/middleware/permissions.middleware"
+import sectionsRouter from "@/modules/sections/sections.routes"
+import { Router } from 'express'
+import * as projectsController from './projects.controller'
 
 const router = Router();
 
@@ -19,7 +19,7 @@ router.get('/:projectId/members',
   requireAuth,
   requireMembership("projectId"),
   requirePermission("member:read"),
-  projectsController.getAssignedUsersInProjectHandler);
+  projectsController.getProjectMembersByIdHandler);
 
 router.get('/:projectId',
   requireAuth,

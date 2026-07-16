@@ -1,20 +1,50 @@
-import { pgEnum, pgTable, timestamp, uuid, unique } from "drizzle-orm/pg-core";
-import { usersTable } from "./users";
-import { projectsTable } from "./projects";
+import { } from 'drizzle-orm/cockroach-core'
+import { index, pgEnum, pgTable, primaryKey, timestamp, uuid } from "drizzle-orm/pg-core"
+import { projectsTable } from "./projects"
+import { usersTable } from "./users"
 
-export const projectRoleEnum = pgEnum("project_role", ["owner", "member", "viewer"]);
+export const projectRoleEnum = pgEnum("project_role", ["member", "viewer"])
 
 export const projectMemberTable = pgTable("project_members", {
-  id: uuid('id').defaultRandom().primaryKey(),
-  userId: uuid('user_id').notNull().references(() => usersTable.id, { onDelete: 'cascade' }),
-  projectId: uuid('project_id').notNull().references(() => projectsTable.id, { onDelete: 'cascade' }),
-  role: projectRoleEnum('role').default('member').notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull().$onUpdate(() => new Date()),
+  projectId:
+    uuid('project_id').
+      notNull().
+      references(() => projectsTable.id,
+        { onDelete: 'cascade' }),
+
+  userId:
+    uuid('user_id').
+      notNull().
+      references(() => usersTable.id,
+        { onDelete: 'cascade' }),
+
+  role:
+    projectRoleEnum('role').
+      default('member').
+      notNull(),
+
+  joinedAt:
+    timestamp('joined_at',
+      { withTimezone: true, mode: 'date' }).
+      defaultNow().
+      notNull(),
+
+  updatedAt:
+    timestamp('updated_at',
+      { withTimezone: true, mode: 'date' }).
+      defaultNow().
+      notNull().
+      $onUpdate(() => new Date()),
 },
   (table => [
-    unique().on(table.projectId, table.userId)
-  ]));
+    primaryKey({
+      columns: [table.projectId, table.userId]
+    }),
+    index("project_members_by_user_idx").on(
+      table.userId,
+      table.projectId
+    )
+  ]))
 
-export type ProjectMembers = typeof projectMemberTable.$inferSelect;
-export type NewProjectMembers = typeof projectMemberTable.$inferInsert;
+export type ProjectMembers = typeof projectMemberTable.$inferSelect
+export type NewProjectMembers = typeof projectMemberTable.$inferInsert

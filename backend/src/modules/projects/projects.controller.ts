@@ -1,7 +1,7 @@
-import { type Request, type Response } from "express";
-import { createProject, getProjectById, getProjectsByUserId, updateProject, deleteProject, getAssignedUsersInProject } from "./projects.service";
-import { CreateProjectSchema, UpdateProjectSchema } from "./projects.schema";
-import { BadRequestError, NotFoundError, UnauthorizedError } from "@/utils/errors";
+import { BadRequestError, NotFoundError, UnauthorizedError } from "@/utils/errors"
+import { type Request, type Response } from "express"
+import { CreateProjectSchema, UpdateProjectSchema } from "./projects.schema"
+import { createProject, deleteProject, getProjectById, getProjectMembersById, getProjectsByUserId, updateProject } from "./projects.service"
 
 export async function createProjectHandler(req: Request, res: Response) {
   if(!req.user) throw new UnauthorizedError();
@@ -13,14 +13,14 @@ export async function createProjectHandler(req: Request, res: Response) {
     .json({ message: "Project created successfully", data: project })
 }
 
-export async function getAssignedUsersInProjectHandler(req: Request<{projectId: string}>, res: Response) {
+export async function getProjectMembersByIdHandler(req: Request<{projectId: string}>, res: Response) {
   const userId = req.user?.id;
   if (!userId) throw new UnauthorizedError();
 
   const projectId = req.params.projectId;
   if (!projectId) throw new BadRequestError();
 
-  const assignedUsers = await getAssignedUsersInProject(projectId);
+  const assignedUsers = await getProjectMembersById(projectId);
 
   return res
     .status(200)

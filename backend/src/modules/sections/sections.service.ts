@@ -1,8 +1,8 @@
-import { sectionsTable } from "@/db/schema/sections";
-import { eq, max, and, asc, or, isNotNull } from "drizzle-orm";
-import { db } from "@/db";
-import { ProjectRole } from "@/utils/permissions";
-import { sectionAccessTable } from "@/db/schema/sectionAccess";
+import { db } from "@/db"
+import { sectionMembersTable } from "@/db/schema/sectionMembers"
+import { sectionsTable } from "@/db/schema/sections"
+import { ProjectRole } from "@/utils/permissions"
+import { and, asc, eq, isNotNull, max, or } from "drizzle-orm"
 
 
 type SectionInputCreate = {
@@ -26,31 +26,31 @@ type GetAllowedSectionById = {
   role: ProjectRole
 }
 
-const POSITION_STEP = 1000;
+const POSITION_STEP = 1000
 
 export async function createSection({ projectId, createdBy, name, description, visibility }: SectionInputCreate) {
-  const sectionId = crypto.randomUUID();
+  const sectionId = crypto.randomUUID()
 
   //Search for max position value
-  const [result] = await db.select({maxPosition: max(sectionsTable.position)}).from(sectionsTable).where(eq(sectionsTable.projectId, projectId))
-  const newPosition = (result?.maxPosition ?? 0) + POSITION_STEP;
-  const [section] = await db.insert(sectionsTable).values({ id: sectionId, projectId, createdBy, name, description, visibility, position: newPosition }).returning();
+  const [result] = await db.select({ maxPosition: max(sectionsTable.position) }).from(sectionsTable).where(eq(sectionsTable.projectId, projectId))
+  const newPosition = (result?.maxPosition ?? 0) + POSITION_STEP
+  const [section] = await db.insert(sectionsTable).values({ id: sectionId, projectId, createdBy, name, description, visibility, position: newPosition }).returning()
 
-  return section;
+  return section
 }
 
-export async function getAllowedSectionsByProjectId({projectId, userId, role}: GetAllowedSectionsByProjectId) {
+export async function getAllowedSectionsByProjectId({ projectId, userId, role }: GetAllowedSectionsByProjectId) {
   if (role === "owner") {
-    return await db.select().from(sectionsTable).where(eq(sectionsTable.projectId, projectId)).orderBy(asc(sectionsTable.position));
+    return await db.select().from(sectionsTable).where(eq(sectionsTable.projectId, projectId)).orderBy(asc(sectionsTable.position))
   }
   const sections = await db
     .select()
     .from(sectionsTable)
     .leftJoin(
-      sectionAccessTable,
+      sectionMembersTable,
       and(
-        eq(sectionAccessTable.sectionId, sectionsTable.id),
-        eq(sectionAccessTable.userId, userId),
+        eq(sectionMembersTable.sectionId, sectionsTable.id),
+        eq(sectionMembersTable.userId, userId),
       ),
     )
     .where(
@@ -59,39 +59,49 @@ export async function getAllowedSectionsByProjectId({projectId, userId, role}: G
         or(
           eq(sectionsTable.visibility, "public"),
           eq(sectionsTable.createdBy, userId),
-          isNotNull(sectionAccessTable.id),
+          isNotNull(sectionMembersTable.id),
         ),
       ),
     )
-    .orderBy(asc(sectionsTable.position));
+    .orderBy(asc(sectionsTable.position))
 
-  return sections.map((section) => section.sections);
+  return sections.map((section) => section.sections)
 }
 
-export async function getAllowedSectionById({projectId, sectionId, userId, role }:GetAllowedSectionById) {
+export async function getAllowedSectionById({ projectId, sectionId, userId, role }: GetAllowedSectionById) {
   if (role === "owner") {
-    const [section] = await db.select().from(sectionsTable).where(and(eq(sectionsTable.id, sectionId), eq(sectionsTable.projectId, projectId)));
+    const [section] = await db.select().from(sectionsTable).where(and(eq(sectionsTable.id, sectionId), eq(sectionsTable.projectId, projectId)))
 
-    return section;
+    return section
   }
 
   const [section] = await db
     .select()
     .from(sectionsTable)
     .leftJoin(
-      sectionAccessTable,
+      sectionMembersTable,
       and(
-        eq(sectionAccessTable.sectionId, sectionsTable.id),
-        eq(sectionAccessTable.userId, userId)
+        eq(sectionMembersTable.sectionId, sectionsTable.id),
+        eq(sectionMembersTable.userId, userId)
       )
     )
     .where(
       and(
         eq(sectionsTable.visibility, "public"),
         eq(sectionsTable.createdBy, userId),
-        isNotNull(sectionAccessTable.id)
+        isNotNull(sectionMembersTable.id)
       )
     )
 
-  return section?.sections;
+  return section?.sections
 }
+
+// export async function getSectionMembersById(sectionId: string) {
+//   const assignedUsers = await db
+//     .select({
+//       id: usersTable.id,
+//       username: usersTable.username,
+//       role: sectionMembersTable.role
+//     })
+//     .from(sectionMembersTable)
+// }

@@ -1,13 +1,40 @@
-import { pgTable, varchar, uuid, timestamp} from "drizzle-orm/pg-core";
-import { usersTable } from "./users";
+import { index, pgTable, timestamp, uuid, varchar } from "drizzle-orm/pg-core"
+import { usersTable } from "./users"
 
 export const refreshTokensTable = pgTable("refresh_tokens", {
-    id: uuid('id').defaultRandom().primaryKey(),
-    userId: uuid('user_id').notNull().references(() => usersTable.id, { onDelete: 'cascade' }),
-    tokenHash: varchar('token_hash', { length: 64 }).notNull().unique(),
-    expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull()
-});
+    id:
+        uuid('id').
+            defaultRandom().
+            primaryKey(),
 
-export type RefreshToken = typeof refreshTokensTable.$inferSelect;
-export type NewRefreshToken = typeof refreshTokensTable.$inferInsert;
+    userId:
+        uuid('user_id').
+            notNull().
+            references(() => usersTable.id,
+                { onDelete: 'cascade' }),
+
+    tokenHash:
+        varchar('token_hash',
+            { length: 64 }).
+            notNull().
+            unique(),
+
+    expiresAt:
+        timestamp('expires_at',
+            { withTimezone: true, mode: 'date' }).
+            notNull(),
+
+    createdAt:
+        timestamp('created_at',
+            { withTimezone: true, mode: 'date' }).
+            defaultNow().
+            notNull()
+},
+    (table) => [
+        index("refresh_tokens_user_idx").on(table.userId),
+        index("refresh_tokens_expires_at_idx").on(table.expiresAt)
+    ]
+)
+
+export type RefreshToken = typeof refreshTokensTable.$inferSelect
+export type NewRefreshToken = typeof refreshTokensTable.$inferInsert
