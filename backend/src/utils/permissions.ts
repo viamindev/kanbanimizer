@@ -2,7 +2,6 @@ export type ProjectRole = "owner" | "member" | "viewer";
 
 export type Action =
   | "project:read"
-  | "member:read"
   | "project:update"
   | "project:delete"
   | "project:ownership:transfer"

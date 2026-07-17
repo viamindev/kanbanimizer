@@ -1,4 +1,3 @@
-import { } from 'drizzle-orm/cockroach-core'
 import { index, pgEnum, pgTable, primaryKey, timestamp, uuid } from "drizzle-orm/pg-core"
 import { projectsTable } from "./projects"
 import { usersTable } from "./users"

@@ -1,8 +1,9 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { projectMemberTable } from '@/db/schema/projectMembers';
+import { projectsTable } from "@/db/schema/projects";
 import { db } from "@/db/index";
 import { eq, and } from 'drizzle-orm';
-import { ForbiddenError, UnauthorizedError } from "@/utils/errors";
+import { ForbiddenError, UnauthorizedError, NotFoundError } from "@/utils/errors";
 
 
 export function requireMembership(projectIdParam = "projectId") {
@@ -12,34 +13,43 @@ export function requireMembership(projectIdParam = "projectId") {
     next: NextFunction
   ) => {
     const projectId = req.params[projectIdParam];
+    if (!projectId) throw new ForbiddenError();
+
     const userId = req.user?.id;
+    if (!userId) throw new UnauthorizedError();
 
-    if (!userId) {
-      throw new UnauthorizedError();
-    }
+    const [access] = await db
+      .select({
+        ownerUserId: projectsTable.ownerUserId,
+        memberRole: projectMemberTable.role,
+      })
+      .from(projectsTable)
+      .leftJoin(
+        projectMemberTable,
+        and(
+          eq(
+            projectMemberTable.projectId,
+            projectsTable.id,
+          ),
+          eq(projectMemberTable.userId, userId),
+        ),
+      )
+      .where(eq(projectsTable.id, projectId))
+      .limit(1);
 
-    if (!projectId) {
-      throw new ForbiddenError();
-    }
+    if (!access) throw new NotFoundError("Project not found");
 
-    const [membership] = await db
-          .select({ role: projectMemberTable.role })
-          .from(projectMemberTable)
-          .where(
-            and(
-              eq(projectMemberTable.userId, userId),
-              eq(projectMemberTable.projectId, projectId),
-            ),
-          );
+    const role =
+      access.ownerUserId === userId
+        ? "owner"
+        : access.memberRole;
 
-    if (!membership) {
-      throw new ForbiddenError();
-    }
+    if (!role) throw new ForbiddenError();
 
     req.membership = {
       projectId,
-      role: membership.role,
-    }
+      role,
+    };
 
     next();
   };
