@@ -8,3 +8,18 @@ export const CreateSectionSchema = z.object({
 });
 
 export type CreateSectionInput = z.infer<typeof CreateSectionSchema>;
+
+export const ReorderSectionsSchema = z
+  .object({
+    sectionIds: z
+      .array(z.uuid())
+      .min(1),
+  })
+  .refine(
+    ({ sectionIds }) =>
+      new Set(sectionIds).size === sectionIds.length,
+    {
+      message: "Section IDs must be unique",
+      path: ["sectionIds"],
+    },
+  );

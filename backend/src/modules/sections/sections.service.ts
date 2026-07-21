@@ -1,7 +1,7 @@
 import { db } from "@/db"
 import { sectionMembersTable } from "@/db/schema/sectionMembers"
 import { sectionsTable } from "@/db/schema/sections"
-import { and, asc, eq, isNotNull, max, or } from "drizzle-orm"
+import { and, asc, eq, isNotNull, or } from "drizzle-orm"
 import { projectsTable } from "@/db/schema/projects"
 
 
@@ -10,7 +10,7 @@ type SectionInputCreate = {
   createdByUserId: string,
   name: string,
   accessScope: "project" | "restricted";
-  description?: string,
+  description?: string | null,
 }
 
 type AllowedSections = {
@@ -24,18 +24,13 @@ type DeleteSectionInput = {
 }
 
 
-const POSITION_STEP = 1000
-
-export async function createSection({ projectId, createdByUserId, name, accessScope, description }: SectionInputCreate) {
-  const [result] = await db.
-    select({
-      maxPosition: max(sectionsTable.position),
-    })
-    .from(sectionsTable)
-    .where(eq(sectionsTable.projectId, projectId));
-
-  const position = (result?.maxPosition ?? 0) + POSITION_STEP;
-
+export async function createSection({
+  projectId,
+  createdByUserId,
+  name,
+  accessScope,
+  description,
+}: SectionInputCreate) {
   const [section] = await db
     .insert(sectionsTable)
     .values({
@@ -44,24 +39,11 @@ export async function createSection({ projectId, createdByUserId, name, accessSc
       name,
       accessScope,
       description,
-      position
     })
     .returning();
 
-  return section
+  return section;
 }
-
-// export async function getSectionById({ projectId, sectionId }: SectionInputGetById) {
-//   const [section] = await db
-//     .select()
-//     .from(sectionsTable)
-//     .where(
-//       and(
-//         eq(sectionsTable.projectId, projectId),
-//         eq(sectionsTable.id, sectionId)))
-
-//   return section;
-// }
 
 export async function getAllowedProjectSections({
   projectId,
@@ -99,7 +81,7 @@ export async function getAllowedProjectSections({
         ),
       ),
     )
-    .orderBy(asc(sectionsTable.position));
+    .orderBy(asc(sectionsTable.createdAt));
 
   return rows.map((row) => row.sections);
 }

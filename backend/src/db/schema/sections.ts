@@ -1,4 +1,4 @@
-import { index, integer, pgEnum, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core"
+import { index, pgEnum, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core"
 import { projectsTable } from "./projects"
 import { usersTable } from "./users"
 
@@ -37,11 +37,6 @@ export const sectionsTable = pgTable("sections", {
       default("project").
       notNull(),
 
-  position:
-    integer("position").
-      default(0).
-      notNull(),
-
   createdAt:
     timestamp('created_at',
       { withTimezone: true, mode: 'date' }).
@@ -65,7 +60,6 @@ export const sectionsTable = pgTable("sections", {
 
     index("sections_project_position_idx").on(
       table.projectId,
-      table.position
     )
   ])
 

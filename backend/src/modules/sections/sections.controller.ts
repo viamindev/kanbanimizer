@@ -18,7 +18,7 @@ export async function createSectionHandler(
     createdByUserId: userId,
     name: input.name,
     accessScope: input.accessScope,
-    description: input.description!
+    description: input.description
   })
 
   return res.status(201).json({
@@ -45,7 +45,6 @@ export async function getSectionByIdHandler(
     data: section,
   });
 }
-
 
 export async function getAllowedProjectSectionsHandler(req: Request<{ projectId: string }>, res: Response) {
   const userId = req.user?.id

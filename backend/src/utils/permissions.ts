@@ -20,7 +20,7 @@ export type Action =
   | "card:read"
   | "card:create"
   | "card:update"
-  | "card:delete";
+  | "card:delete"
 
 export type PermissionContext = {
   userId?: string;
