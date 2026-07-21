@@ -1,3 +1,5 @@
+import type { Section } from "@/db/schema/sections";
+
 declare global {
   namespace Express {
     interface Request {
@@ -9,6 +11,8 @@ declare global {
         role: "owner" | "member" | "viewer";
         projectId: string;
       };
+
+      section?: Section;
     }
   }
 }

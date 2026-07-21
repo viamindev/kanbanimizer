@@ -23,7 +23,7 @@ export const sectionsTable = pgTable("sections", {
     uuid('created_by_user_id').
       notNull().
       references(() => usersTable.id,
-        { onDelete: 'set null' }),
+        { onDelete: 'restrict' }),
 
   name:
     text('name').
@@ -68,3 +68,5 @@ export const sectionsTable = pgTable("sections", {
       table.position
     )
   ])
+
+export type Section = typeof sectionsTable.$inferSelect;

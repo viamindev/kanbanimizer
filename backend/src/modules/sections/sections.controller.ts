@@ -1,104 +1,82 @@
-import { ForbiddenError, NotFoundError, UnauthorizedError } from "@/utils/errors"
+import { NotFoundError, UnauthorizedError } from "@/utils/errors"
 import type { Request, Response } from "express"
 import { CreateSectionSchema } from "./sections.schema"
-import { createSection, getAllowedSectionById, getAllowedSectionsByProjectId } from "./sections.service"
+import { createSection, getAllowedProjectSections, deleteSection } from "./sections.service"
 
 
 export async function createSectionHandler(
   req: Request<{ projectId: string }>,
   res: Response,
 ) {
-  const projectId = req.params.projectId
   const userId = req.user?.id
+  if (!userId) throw new UnauthorizedError();
 
-
-  if (!userId) {
-    throw new UnauthorizedError()
-  }
-
-  const { name, description, visibility } = CreateSectionSchema.parse(req.body)
+  const input = CreateSectionSchema.parse(req.body);
 
   const section = await createSection({
-    projectId,
-    createdBy: userId,
-    name,
-    description,
-    visibility
+    projectId: req.params.projectId,
+    createdByUserId: userId,
+    name: input.name,
+    accessScope: input.accessScope,
+    description: input.description!
   })
 
   return res.status(201).json({
-    message: "Section created successfully",
+    message: "Section created successfully: ",
     data: section
-  })
-}
-
-export async function getSectionsHandler(
-  req: Request<{ projectId: string }>,
-  res: Response,
-) {
-  const projectId = req.params.projectId
-  const membership = req.membership
-  const userId = req.user?.id
-
-
-  if (!userId) throw new UnauthorizedError()
-  if (!membership) throw new ForbiddenError()
-
-  const sections = await getAllowedSectionsByProjectId({ projectId, userId, role: membership?.role })
-
-  return res.status(200).json({
-    message: "Section retrieved successfully",
-    data: sections
   })
 }
 
 export async function getSectionByIdHandler(
   req: Request<{
-    projectId: string
-    sectionId: string
+    projectId: string;
+    sectionId: string;
   }>,
   res: Response,
 ) {
-  const membership = req.membership
-  const userId = req.user?.id
-  const projectId = req.params.projectId
-  const sectionId = req.params.sectionId
+  const section = req.section;
 
-  if (!userId) throw new UnauthorizedError()
-  if (!membership) throw new ForbiddenError()
-
-  const section = await getAllowedSectionById({
-    projectId: projectId,
-    sectionId: sectionId,
-    userId,
-    role: membership?.role
-  })
-
-  if (!section) throw new NotFoundError("Section not found")
+  if (!section) {
+    throw new NotFoundError("Section not found");
+  }
 
   return res.status(200).json({
     message: "Section retrieved successfully",
-    data: section
+    data: section,
+  });
+}
+
+
+export async function getAllowedProjectSectionsHandler(req: Request<{ projectId: string }>, res: Response) {
+  const userId = req.user?.id
+  if (!userId) throw new UnauthorizedError();
+
+  const projectId = req.params.projectId;
+
+  const sections = await getAllowedProjectSections({ projectId, userId });
+
+  return res.status(200).json({
+    message: "Your sections in projects: ",
+    data: sections || []
   })
 }
 
-// export async function getSectionMembersByIdHandler(
-//   req: Request<{
-//     projectId: string
-//     sectionId: string
-//   }>,
-//   res: Response) {
-//   const userId = req.user?.id
-//   if (!userId) throw new UnauthorizedError()
+export async function deleteSectionHandler(req: Request<{ projectId: string }>, res: Response) {
+  const userId = req.user?.id
+  if (!userId) throw new UnauthorizedError();
 
-//   const projectId = req.params.projectId
-//   if (!projectId) throw new BadRequestError()
+  const projectId = req.params.projectId;
+  const sectionId = req.section?.id;
+  if (!sectionId) throw new NotFoundError('That section not found');
 
-//   const sectionId = req.params.sectionId
+  const deletedSection = await deleteSection({ projectId, sectionId });
 
-//   const assignedUsers = await getSectionMembersById(sectionId)
+  if (!deletedSection) {
+    throw new NotFoundError("Section not found");
+  }
 
-//   return res
-//     .status(200)
-//     .json({ message: `Assigned users in ${sectionId}: `, data: assignedUsers })
-// }
+  return res.status(200).json({
+    message: "Your section successfully deleted: ",
+    data: deletedSection
+  })
+}
