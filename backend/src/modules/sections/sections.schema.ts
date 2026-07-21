@@ -7,19 +7,38 @@ export const CreateSectionSchema = z.object({
   accessScope: z.enum(["project", "restricted"]).default("project")
 });
 
+// export const UpdateSectionSchema = z.object({
+//   name: z.string()
+// })
+
 export type CreateSectionInput = z.infer<typeof CreateSectionSchema>;
 
-export const ReorderSectionsSchema = z
+export const UpdateSectionSchema = z
   .object({
-    sectionIds: z
-      .array(z.uuid())
-      .min(1),
+    name: z
+      .string()
+      .trim()
+      .min(1)
+      .max(120)
+      .optional(),
+
+    description: z
+      .string()
+      .trim()
+      .max(2_000)
+      .nullable()
+      .optional(),
+
+    accessScope: z
+      .enum(["project", "restricted"])
+      .optional(),
   })
   .refine(
-    ({ sectionIds }) =>
-      new Set(sectionIds).size === sectionIds.length,
+    (input) =>
+      input.name !== undefined ||
+      input.description !== undefined ||
+      input.accessScope !== undefined,
     {
-      message: "Section IDs must be unique",
-      path: ["sectionIds"],
+      message: "At least one field must be provided",
     },
   );

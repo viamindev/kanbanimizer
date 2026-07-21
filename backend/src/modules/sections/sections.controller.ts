@@ -1,7 +1,7 @@
 import { NotFoundError, UnauthorizedError } from "@/utils/errors"
 import type { Request, Response } from "express"
-import { CreateSectionSchema } from "./sections.schema"
-import { createSection, getAllowedProjectSections, deleteSection } from "./sections.service"
+import { CreateSectionSchema, UpdateSectionSchema } from "./sections.schema"
+import { createSection, getAllowedProjectSections, deleteSection, updateSection } from "./sections.service"
 
 
 export async function createSectionHandler(
@@ -78,4 +78,21 @@ export async function deleteSectionHandler(req: Request<{ projectId: string }>, 
     message: "Your section successfully deleted: ",
     data: deletedSection
   })
+}
+
+export async function updateSectionHandler(req: Request<{ projectId: string; sectionId: string }>, res: Response) {
+  const section = req.section;
+  if (!section) throw new NotFoundError('Section not found');
+
+  const input = UpdateSectionSchema.parse(req.body);
+
+  const updatedSection = await updateSection({
+     projectId: req.params.projectId,
+     sectionId: section.id,
+     input,
+   });
+
+  if (!updatedSection) throw new NotFoundError('Section not found');
+
+  return res.status(200).json({ message: `Section ${section.id} successfully updated: `, data: updatedSection})
 }

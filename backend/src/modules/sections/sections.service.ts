@@ -23,6 +23,16 @@ type DeleteSectionInput = {
   sectionId: string
 }
 
+type UpdateSectionInput = {
+  projectId: string;
+  sectionId: string;
+  input: {
+    name?: string;
+    description?: string | null;
+    accessScope?: "project" | "restricted";
+  };
+};
+
 
 export async function createSection({
   projectId,
@@ -94,4 +104,14 @@ export async function deleteSection({projectId, sectionId}: DeleteSectionInput) 
     returning();
 
   return deletedSection;
+}
+
+export async function updateSection({ projectId, sectionId, input }: UpdateSectionInput) {
+  const [updatedSection] = await db.
+    update(sectionsTable).
+    set(input).
+    where(
+      and(eq(sectionsTable.projectId, projectId),eq(sectionsTable.id, sectionId))).returning()
+
+  return updatedSection
 }

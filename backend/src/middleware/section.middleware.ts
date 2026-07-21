@@ -8,6 +8,8 @@ import { db } from "@/db";
 import { sectionsTable } from "@/db/schema/sections";
 import { ForbiddenError, NotFoundError, UnauthorizedError, } from "@/utils/errors";
 import { sectionMembersTable } from "@/db/schema/sectionMembers";
+import { can, type Action } from "@/utils/permissions";
+
 
 
 type SectionParams = {
@@ -105,4 +107,47 @@ export async function requireSectionAccess(
   }
 
   next();
+}
+
+
+export function requireSectionPermission(
+  action: Action,
+) {
+  return (
+    req: Request,
+    _res: Response,
+    next: NextFunction,
+  ) => {
+    const userId = req.user?.id;
+    const membership = req.membership;
+    const section = req.section;
+
+    if (!userId) {
+      throw new UnauthorizedError();
+    }
+
+    if (!membership) {
+      throw new ForbiddenError();
+    }
+
+    if (!section) {
+      throw new NotFoundError("Section not found");
+    }
+
+    const allowed = can(
+      membership.role,
+      action,
+      {
+        userId,
+        resourceCreatedBy:
+          section.createdByUserId,
+      },
+    );
+
+    if (!allowed) {
+      throw new ForbiddenError();
+    }
+
+    next();
+  };
 }

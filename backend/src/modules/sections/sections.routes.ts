@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { requirePermission } from "@/middleware/permissions.middleware";
 import * as sectionsController from "./sections.controller";
-import { loadSection, requireSectionAccess } from "@/middleware/section.middleware";
+import { loadSection, requireSectionAccess, requireSectionPermission } from "@/middleware/section.middleware";
 
 const sectionRouter = Router({ mergeParams: true });
 
@@ -25,17 +25,19 @@ sectionRouter.get(
   sectionsController.getAllowedProjectSectionsHandler
 )
 
-// sectionRouter.patch(
-//   "/:sectionId",
-//   requirePermission("section:update"),
-//   // sectionsController.updateSectionHandler
-// )
+sectionRouter.patch(
+  "/:sectionId",
+  loadSection,
+  requireSectionAccess,
+  requireSectionPermission("section:update"),
+  sectionsController.updateSectionHandler
+)
 
 sectionRouter.delete(
   "/:sectionId",
   loadSection,
   requireSectionAccess,
-  requirePermission("section:delete"),
+  requireSectionPermission("section:delete"),
   sectionsController.deleteSectionHandler
 )
 
