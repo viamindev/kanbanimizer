@@ -13,6 +13,7 @@ export type Action =
   | "section:create"
   | "section:update"
   | "section:delete"
+  | "section:member:add"
   | "board:read"
   | "board:create"
   | "board:update"

@@ -1,7 +1,8 @@
 import { BadRequestError, NotFoundError, UnauthorizedError } from "@/utils/errors"
 import { type Request, type Response } from "express"
 import { CreateProjectSchema, UpdateProjectSchema } from "./projects.schema"
-import { createProject, deleteProject, getProjectById, getProjectMembersById, getOwnedProjectsByUserId, updateProject } from "./projects.service"
+import { createProject, deleteProject, getProjectById, getProjectMembersById, getAccessibleProjectsByUserId, updateProject, addProjectMemberByEmail } from "./projects.service"
+import { AddProjectMemberSchema } from "../members/members.schema"
 
 export async function createProjectHandler(req: Request, res: Response) {
   const userId = req.user?.id;
@@ -30,11 +31,11 @@ export async function getProjectMembersByIdHandler(req: Request<{projectId: stri
 
 }
 
-export async function getProjectsByUserIdHandler(req: Request, res: Response) {
+export async function getAccessibleProjectsByUserIdHandler(req: Request, res: Response) {
   const userId = req.user?.id;
   if(!userId) throw new UnauthorizedError();
 
-  const projects = await getOwnedProjectsByUserId(userId);
+  const projects = await getAccessibleProjectsByUserId(userId);
 
   return res
     .status(200)
@@ -77,4 +78,17 @@ export async function deleteProjectHandler(req: Request<{ projectId: string }>, 
   return res
     .status(200)
     .json({ message: "Project removed successfully: ", data: deletedProject })
+}
+
+export async function addProjectMemberByEmailHandler(req: Request<{ projectId: string }>, res: Response) {
+  const projectId = req.params.projectId;
+  if (!projectId) throw new NotFoundError();
+
+  const userId = req.user?.id;
+  if (!userId) throw new UnauthorizedError();
+
+  const input = AddProjectMemberSchema.parse(req.body);
+  const memberInvite = await addProjectMemberByEmail({ projectId, ownerUserId: userId, ...input });
+
+  return res.status(201).json({message: `User ${input.email} successfully invited`, data: memberInvite})
 }

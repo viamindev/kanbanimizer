@@ -1,7 +1,8 @@
-import { NotFoundError, UnauthorizedError } from "@/utils/errors"
+import { BadRequestError, NotFoundError, UnauthorizedError } from "@/utils/errors"
 import type { Request, Response } from "express"
 import { CreateSectionSchema, UpdateSectionSchema } from "./sections.schema"
-import { createSection, getAllowedProjectSections, deleteSection, updateSection } from "./sections.service"
+import { createSection, getAllowedProjectSections, deleteSection, updateSection, addSectionMemberByEmail } from "./sections.service"
+import { AddSectionMemberSchema } from "../members/members.schema"
 
 
 export async function createSectionHandler(
@@ -95,4 +96,28 @@ export async function updateSectionHandler(req: Request<{ projectId: string; sec
   if (!updatedSection) throw new NotFoundError('Section not found');
 
   return res.status(200).json({ message: `Section ${section.id} successfully updated: `, data: updatedSection})
+}
+
+export async function addSectionMemberByEmailHandler(req: Request<{ projectId: string; sectionId: string }>, res: Response) {
+  const userId = req.user?.id;
+  const section = req.section;
+
+  if (!userId) throw new UnauthorizedError();
+  if (!section) throw new NotFoundError("Section not found");
+  if (section.accessScope !== "restricted") throw new BadRequestError("Acces can only be granted to restricted sections");
+
+  const { email } = AddSectionMemberSchema.parse(req.body);
+
+  const member = await addSectionMemberByEmail({
+    projectId: req.params.projectId,
+    sectionId: section.id,
+    grantedByUserId: userId,
+    email
+  });
+
+  return res.status(201).json({
+    message: "Section access granted successfully",
+    data: member
+  })
+
 }

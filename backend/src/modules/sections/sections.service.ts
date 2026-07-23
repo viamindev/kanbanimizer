@@ -3,6 +3,9 @@ import { sectionMembersTable } from "@/db/schema/sectionMembers"
 import { sectionsTable } from "@/db/schema/sections"
 import { and, asc, eq, isNotNull, or } from "drizzle-orm"
 import { projectsTable } from "@/db/schema/projects"
+import { usersTable } from "@/db/schema/users"
+import { projectMemberTable } from "@/db/schema/projectMembers"
+import { ConflictError, NotFoundError } from "@/utils/errors"
 
 
 type SectionInputCreate = {
@@ -32,6 +35,13 @@ type UpdateSectionInput = {
     accessScope?: "project" | "restricted";
   };
 };
+
+type AddSectionMemberInput = {
+  projectId: string;
+  sectionId: string;
+  grantedByUserId: string;
+  email: string;
+}
 
 
 export async function createSection({
@@ -114,4 +124,46 @@ export async function updateSection({ projectId, sectionId, input }: UpdateSecti
       and(eq(sectionsTable.projectId, projectId),eq(sectionsTable.id, sectionId))).returning()
 
   return updatedSection
+}
+
+export async function addSectionMemberByEmail({
+  projectId, sectionId, grantedByUserId, email
+}: AddSectionMemberInput) {
+  const [projectMember] = await db
+    .select({ id: usersTable.id, email: usersTable.email, username: usersTable.username, role: projectMemberTable.role })
+    .from(projectMemberTable)
+    .innerJoin(
+      usersTable,
+      eq(usersTable.id, projectMemberTable.userId)
+    )
+    .where(
+      and(
+        eq(projectMemberTable.projectId, projectId),
+        eq(usersTable.email, email)
+      )
+    )
+
+  if (!projectMember) throw new NotFoundError("User is not a member of this project");
+
+  const [sectionMembership] = await db
+    .insert(sectionMembersTable)
+    .values({
+      projectId,
+      sectionId,
+      userId: projectMember.id,
+      grantedByUserId
+    }).onConflictDoNothing()
+    .returning({
+      grantedAt: sectionMembersTable.grantedAt
+    })
+
+  if (!sectionMembership) throw new ConflictError("User already has access to this section");
+
+  return {
+    id: projectMember.id,
+    email: projectMember.email,
+    username: projectMember.username,
+    role: projectMember.role,
+    grantedAt: sectionMembership.grantedAt
+  }
 }

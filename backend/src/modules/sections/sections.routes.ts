@@ -11,6 +11,14 @@ sectionRouter.post(
   sectionsController.createSectionHandler
 )
 
+sectionRouter.post(
+  "/:sectionId/members",
+  loadSection,
+  requireSectionAccess,
+  requirePermission("section:member:add"),
+  sectionsController.addSectionMemberByEmailHandler
+)
+
 sectionRouter.get(
   '/:sectionId',
   loadSection,
