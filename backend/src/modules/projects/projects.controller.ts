@@ -1,7 +1,7 @@
 import { BadRequestError, NotFoundError, UnauthorizedError } from "@/utils/errors"
 import { type Request, type Response } from "express"
 import { CreateProjectSchema, UpdateProjectSchema } from "./projects.schema"
-import { createProject, deleteProject, getProjectById, getProjectMembersById, getAccessibleProjectsByUserId, updateProject, addProjectMemberByEmail } from "./projects.service"
+import { createProject, deleteProject, getProjectById, getProjectMembersById, getAccessibleProjectsByUserId, updateProject, addProjectMemberByEmail, removeProjectMember } from "./projects.service"
 import { AddProjectMemberSchema } from "../members/members.schema"
 
 export async function createProjectHandler(req: Request, res: Response) {
@@ -91,4 +91,39 @@ export async function addProjectMemberByEmailHandler(req: Request<{ projectId: s
   const memberInvite = await addProjectMemberByEmail({ projectId, ownerUserId: userId, ...input });
 
   return res.status(201).json({message: `User ${input.email} successfully invited`, data: memberInvite})
+}
+
+export async function removeProjectMemberHandler(
+  req: Request<{
+    projectId: string;
+    memberUserId: string;
+  }>,
+  res: Response,
+) {
+  const currentUserId = req.user?.id;
+
+  if (!currentUserId) {
+    throw new UnauthorizedError();
+  }
+
+  const {
+    projectId,
+    memberUserId,
+  } = req.params;
+
+  const deletedMember = await removeProjectMember({
+    projectId,
+    memberUserId,
+  });
+
+  if (!deletedMember) {
+    throw new NotFoundError(
+      "Project member not found",
+    );
+  }
+
+  return res.status(200).json({
+    message: "Project member removed successfully",
+    data: deletedMember,
+  });
 }

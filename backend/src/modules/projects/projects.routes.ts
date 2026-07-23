@@ -25,8 +25,13 @@ router.post('/:projectId/members',
   requireAuth,
   requireMembership("projectId"),
   requirePermission("member:invite"),
-  projectsController.addProjectMemberByEmailHandler
-)
+  projectsController.addProjectMemberByEmailHandler);
+
+router.delete('/:projectId/members',
+  requireAuth,
+  requireMembership("projectId"),
+  requirePermission("member:remove"),
+  projectsController.removeProjectMemberHandler);
 
 router.get('/:projectId',
   requireAuth,

@@ -23,6 +23,11 @@ type AddProjectMemberInput = {
   role: "member" | "viewer"
 }
 
+type RemoveProjectMemberInput = {
+  projectId: string;
+  memberUserId: string;
+};
+
 export async function createProject({ ownerUserId, name, description }: createProjectInput) {
   const [project] = await db.
     insert(projectsTable).
@@ -152,4 +157,24 @@ export async function addProjectMemberByEmail({
     role: membership.role,
     joinedAt: membership.joinedAt,
   }
+}
+
+export async function removeProjectMember({
+  projectId,
+  memberUserId,
+}: RemoveProjectMemberInput) {
+  const [deletedMembership] = await db
+    .delete(projectMemberTable)
+    .where(
+      and(
+        eq(projectMemberTable.projectId, projectId),
+        eq(projectMemberTable.userId, memberUserId),
+      ),
+    )
+    .returning({
+      userId: projectMemberTable.userId,
+      role: projectMemberTable.role,
+    });
+
+  return deletedMembership;
 }

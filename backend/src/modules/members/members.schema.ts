@@ -7,4 +7,4 @@ export const AddProjectMemberSchema = z.object({
 
 export const AddSectionMemberSchema = z.object({
   email: z.email().toLowerCase(),
-})
+});
