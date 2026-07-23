@@ -1,7 +1,7 @@
 import { BadRequestError, NotFoundError, UnauthorizedError } from "@/utils/errors"
 import type { Request, Response } from "express"
 import { CreateSectionSchema, UpdateSectionSchema } from "./sections.schema"
-import { createSection, getAllowedProjectSections, deleteSection, updateSection, addSectionMemberByEmail } from "./sections.service"
+import { createSection, getAllowedProjectSections, deleteSection, updateSection, addSectionMemberByEmail, getMembersBySectionId } from "./sections.service"
 import { AddSectionMemberSchema } from "../members/members.schema"
 
 
@@ -120,4 +120,29 @@ export async function addSectionMemberByEmailHandler(req: Request<{ projectId: s
     data: member
   })
 
+}
+
+export async function getSectionMembersHandler(
+  req: Request<{
+    projectId: string;
+    sectionId: string;
+  }>,
+  res: Response,
+) {
+  const section = req.section;
+
+  if (!section)throw new NotFoundError("Section not found");
+
+  if (section.accessScope !== "restricted") throw new BadRequestError("Project sections inherit all project members");
+
+
+  const members = await getMembersBySectionId(
+    req.params.projectId,
+    section.id,
+  );
+
+  return res.status(200).json({
+    message: "Section members retrieved successfully",
+    data: members,
+  });
 }

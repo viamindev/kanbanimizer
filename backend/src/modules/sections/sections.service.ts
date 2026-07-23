@@ -167,3 +167,41 @@ export async function addSectionMemberByEmail({
     grantedAt: sectionMembership.grantedAt
   }
 }
+
+export async function getMembersBySectionId(
+  projectId: string,
+  sectionId: string,
+) {
+  return db
+    .select({
+      id: usersTable.id,
+      email: usersTable.email,
+      username: usersTable.username,
+      role: projectMemberTable.role,
+      grantedAt: sectionMembersTable.grantedAt,
+    })
+    .from(sectionMembersTable)
+    .innerJoin(
+      usersTable,
+      eq(usersTable.id, sectionMembersTable.userId),
+    )
+    .innerJoin(
+      projectMemberTable,
+      and(
+        eq(
+          projectMemberTable.projectId,
+          sectionMembersTable.projectId,
+        ),
+        eq(
+          projectMemberTable.userId,
+          sectionMembersTable.userId,
+        ),
+      ),
+    )
+    .where(
+      and(
+        eq(sectionMembersTable.projectId, projectId),
+        eq(sectionMembersTable.sectionId, sectionId),
+      ),
+    );
+}

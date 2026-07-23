@@ -21,6 +21,13 @@ router.get('/:projectId/members',
   requirePermission("member:read"),
   projectsController.getProjectMembersByIdHandler);
 
+router.post('/:projectId/members',
+  requireAuth,
+  requireMembership("projectId"),
+  requirePermission("member:invite"),
+  projectsController.addProjectMemberByEmailHandler
+)
+
 router.get('/:projectId',
   requireAuth,
   requireMembership("projectId"),
@@ -44,11 +51,6 @@ router.use("/:projectId/sections",
   requireMembership("projectId"),
   sectionsRouter);
 
-router.post('/:projectId/members',
-  requireAuth,
-  requireMembership("projectId"),
-  requirePermission("member:invite"),
-  projectsController.addProjectMemberByEmailHandler
-)
+
 
 export default router;

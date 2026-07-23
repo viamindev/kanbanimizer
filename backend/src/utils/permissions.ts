@@ -14,6 +14,7 @@ export type Action =
   | "section:update"
   | "section:delete"
   | "section:member:add"
+  | "section:member:read"
   | "board:read"
   | "board:create"
   | "board:update"

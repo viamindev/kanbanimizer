@@ -20,6 +20,14 @@ sectionRouter.post(
 )
 
 sectionRouter.get(
+  "/:sectionId/members",
+  loadSection,
+  requireSectionAccess,
+  requirePermission("section:member:read"),
+  sectionsController.getSectionMembersHandler
+)
+
+sectionRouter.get(
   '/:sectionId',
   loadSection,
   requireSectionAccess,
